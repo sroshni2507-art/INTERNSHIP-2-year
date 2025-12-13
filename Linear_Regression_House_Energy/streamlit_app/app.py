@@ -8,10 +8,10 @@ st.set_page_config(page_title="House Energy Prediction", layout="centered")
 st.title("🏠 House Energy Prediction App")
 st.write("Predict house energy usage based on input features using Linear Regression.")
 
-# Load trained model
-model_path = os.path.join(os.path.dirname(__file__), "../houseenergy_model.pkl")
+model_path = os.path.join(os.path.dirname(__file__), "houseenergy_model.pkl")
 with open(model_path, "rb") as file:
     model = pickle.load(file)
+
 
 # Example input fields - adjust based on your model features
 feature1 = st.number_input("Enter Feature 1", min_value=0.0)
