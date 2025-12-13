@@ -3,11 +3,11 @@ import pickle
 import numpy as np
 import os
 
-MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "../model/penguin_dtree_model (2).pkl"
-)
+# In your app.py file:
 
+# Construct the file path relative to the repository root.
+# This format is reliable on Streamlit Cloud (Linux environment).
+MODEL_PATH = "Decision_Tree_Penguin_Prediction/model/penguin_dtree_model (2).pkl"
 
 # 2️⃣ Load model safely
 if not os.path.exists(MODEL_PATH):
