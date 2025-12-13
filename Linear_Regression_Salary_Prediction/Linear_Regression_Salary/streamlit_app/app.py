@@ -8,11 +8,12 @@ st.set_page_config(page_title="Salary Prediction App", layout="centered")
 st.title("💼 Salary Prediction App")
 st.write("This app predicts salary based on years of experience using Linear Regression.")
 
-# Load trained model
-with open("salary_model.pkl", "rb") as file:
+import os
+
+model_path = os.path.join(os.path.dirname(__file__), "salary_model.pkl")
+with open(model_path, "rb") as file:
     model = pickle.load(file)
 
-# User input
 years_exp = st.number_input(
     "Enter Years of Experience",
     min_value=0.0,
