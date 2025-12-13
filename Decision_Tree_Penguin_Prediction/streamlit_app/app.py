@@ -30,3 +30,4 @@ if st.button("Predict"):
     pred = model.predict(data)
     species_map = {0: "Adelie", 1: "Chinstrap", 2: "Gentoo"}
     st.success(f"Predicted Species: {species_map[pred[0]]}")
+
