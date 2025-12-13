@@ -6,20 +6,22 @@ import os
 # Page title
 st.set_page_config(page_title="House Energy Prediction", layout="centered")
 st.title("🏠 House Energy Prediction App")
-st.write("Predict house energy usage based on input features using Linear Regression.")
+st.write("Predict Sub Metering 3 based on Global Active Power using Linear Regression.")
 
+# Load trained model
 model_path = os.path.join(os.path.dirname(__file__), "houseenergy_model.pkl")
 with open(model_path, "rb") as file:
     model = pickle.load(file)
 
-
-# Example input fields - adjust based on your model features
-feature1 = st.number_input("Enter Feature 1", min_value=0.0)
-feature2 = st.number_input("Enter Feature 2", min_value=0.0)
-# Add more features if your model needs
+# ✅ ONLY ONE INPUT (same as training)
+global_active_power = st.number_input(
+    "Enter Global Active Power",
+    min_value=0.0,
+    step=0.1
+)
 
 # Predict button
 if st.button("Predict Energy"):
-    input_data = np.array([[feature1, feature2]])  # Make sure this matches model features
+    input_data = np.array([[global_active_power]])  # ✅ 1 feature only
     prediction = model.predict(input_data)
-    st.success(f"🔋 Predicted Energy Consumption: {prediction[0]:,.2f}")
+    st.success(f"🔋 Predicted Sub Metering 3: {prediction[0]:.2f}")
