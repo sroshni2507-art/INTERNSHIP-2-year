@@ -4,7 +4,11 @@ import numpy as np
 import os
 
 # Load model safely
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "diabetes_model.pkl")
+MODEL_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "diabetes_model (3).pkl"
+)
+
 model = pickle.load(open(MODEL_PATH, "rb"))
 
 st.title("Diabetes Prediction (Logistic Regression)")
