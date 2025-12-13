@@ -3,15 +3,14 @@ import numpy as np
 import os
 import pickle
 
-# Construct the file path relative to the repository root
+# Construct the file path relative to the repository root.
 # On Streamlit Cloud, the working directory is the repo root.
-# Your model is located in a specific subdirectory structure.
 MODEL_PATH = "Decision_Tree_Penguin_Prediction/streamlit_app/penguin_dtree_model.pkl" 
 
-# Load the model using the corrected path
+# Load the model
+# Ensure you've followed the Git LFS steps mentioned previously for proper upload.
 model = pickle.load(open(MODEL_PATH, "rb"))
 
-# ... rest of your Streamlit app code ...
 st.title("Penguin Species Prediction (Decision Tree)")
 
 bill_length = st.number_input("Bill Length (mm)", 0.0)
