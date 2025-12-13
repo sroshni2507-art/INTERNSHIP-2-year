@@ -3,11 +3,11 @@ import pickle
 import numpy as np
 import os
 
-# 1️⃣ Define model path
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
     "../model/penguin_dtree_model (2).pkl"
 )
+
 
 # 2️⃣ Load model safely
 if not os.path.exists(MODEL_PATH):
