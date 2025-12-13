@@ -9,7 +9,7 @@ st.title("🏠 House Energy Prediction App")
 st.write("Predict house energy usage based on input features using Linear Regression.")
 
 # Load trained model
-model_path = os.path.join(os.path.dirname(__file__), "../houseengery_model.pkl")
+model_path = os.path.join(os.path.dirname(__file__), "../houseenergy_model.pkl")
 with open(model_path, "rb") as file:
     model = pickle.load(file)
 
