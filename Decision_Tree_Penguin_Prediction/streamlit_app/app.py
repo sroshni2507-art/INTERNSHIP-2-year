@@ -5,7 +5,7 @@ import os
 
 # In your app.py file:
 
-# Construct the file path relative to the repository root.
+# Construct the file path relative to the repository root
 # This format is reliable on Streamlit Cloud (Linux environment).
 MODEL_PATH = "Decision_Tree_Penguin_Prediction/model/penguin_dtree_model (2).pkl"
 
