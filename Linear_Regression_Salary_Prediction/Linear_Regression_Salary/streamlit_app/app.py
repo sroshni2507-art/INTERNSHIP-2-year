@@ -9,7 +9,7 @@ st.title("💼 Salary Prediction App")
 st.write("This app predicts salary based on years of experience using Linear Regression.")
 
 # Load trained model
-with open("salarymodel.pkl", "rb") as file:
+with open("salary_model.pkl", "rb") as file:
     model = pickle.load(file)
 
 # User input
