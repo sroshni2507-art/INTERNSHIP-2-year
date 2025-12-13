@@ -1,15 +1,19 @@
 import streamlit as st
-import pickle
+
 import numpy as np
+
 import os
+import pickle
 
-# Load model
-MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "../model/telco_churn_model.pkl"
-)
+# Get the directory of the current script (app.py)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Join the script directory with the model file name
+model_path = os.path.join(script_dir, "telco_churn_model.pkl")
 
-model = pickle.load(open(MODEL_PATH, "rb"))
+# Load the model using the constructed path
+with open(model_path, "rb") as file:
+    model = pickle.load(file)
+
 
 st.title("Telco Customer Churn Prediction")
 
