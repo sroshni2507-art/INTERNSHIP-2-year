@@ -2,8 +2,11 @@ import streamlit as st
 import pickle
 import numpy as np
 
-# Load trained model
-model = pickle.load(open("diabetes_model.pkl", "rb"))
+import os
+import pickle
+
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "diabetes_model.pkl")
+model = pickle.load(open(MODEL_PATH, "rb"))
 
 st.title("Diabetes Prediction using Logistic Regression")
 
