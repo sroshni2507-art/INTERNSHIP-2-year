@@ -1,0 +1,14 @@
+# Model files
+*.h5
+*.pt
+*.ckpt
+*.pkl
+
+# Dataset
+data/
+dataset/
+images/
+
+# Python cache
+__pycache__/
+.ipynb_checkpoints/
