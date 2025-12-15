@@ -2,9 +2,15 @@ import streamlit as st
 import pickle
 import numpy as np
 
-# Load model
-with open("model.pkl", "rb") as file:
+import os
+
+
+BASE_DIR = os.path.dirname(__file__)
+MODEL_PATH = os.path.join(BASE_DIR, "model.pkl")
+
+with open(MODEL_PATH, "rb") as file:
     model = pickle.load(file)
+
 
 st.title("🌳 Diabetes Prediction using Random Forest")
 
