@@ -5,13 +5,12 @@ import joblib
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 
-# Load model & scaler
 BASE_DIR = os.path.dirname(__file__)
+
 model = joblib.load(os.path.join(BASE_DIR, "hierarchical_mall_customer.pkl"))
 scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
 
 st.title("🛍️ Mall Customer Segmentation")
-st.write("Hierarchical Clustering using Saved Model")
 
 uploaded_file = st.file_uploader("Upload Mall Customers CSV", type=["csv"])
 
@@ -21,32 +20,26 @@ if uploaded_file:
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
-    # -------------------------
-    # Preprocessing
-    # -------------------------
+    # Drop ID
     if "CustomerID" in df.columns:
         df.drop("CustomerID", axis=1, inplace=True)
 
-    # 🔥 FIX: Rename Genre → Gender
+    # Rename Genre → Gender
     if "Genre" in df.columns:
         df.rename(columns={"Genre": "Gender"}, inplace=True)
 
-    # Encode Gender
+    # Encode Gender (NOT used for scaling)
     if "Gender" in df.columns:
-        le = LabelEncoder()
-        df["Gender"] = le.fit_transform(df["Gender"])
+        df["Gender"] = LabelEncoder().fit_transform(df["Gender"])
 
-    # ✅ Same features used during training
-    feature_cols = [
-        "Gender",
+    # ✅ ONLY NUMERIC FEATURES USED DURING TRAINING
+    X = df[[
         "Age",
         "Annual Income (k$)",
         "Spending Score (1-100)"
-    ]
+    ]]
 
-    X = df[feature_cols]
-
-    # Scaling
+    # Scale
     X_scaled = scaler.transform(X)
 
     # Clustering
@@ -56,7 +49,6 @@ if uploaded_file:
     st.subheader("Clustered Data")
     st.dataframe(df.head())
 
-    # Visualization
     st.subheader("Cluster Visualization")
     plt.figure(figsize=(6, 4))
     plt.scatter(
@@ -66,8 +58,4 @@ if uploaded_file:
     )
     plt.xlabel("Annual Income (k$)")
     plt.ylabel("Spending Score (1-100)")
-    plt.title("Hierarchical Clustering Output")
     st.pyplot(plt)
-
-else:
-    st.info("Please upload the Mall Customers CSV file.")
