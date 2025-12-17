@@ -22,25 +22,19 @@ if uploaded_file:
     # 🔹 Drop unwanted columns
     df = df.drop(columns=["CustomerID"], errors="ignore")
 
-    # 🔹 Rename Genre → Gender
-    df.rename(columns={"Genre": "Gender"}, inplace=True)
+# Drop unwanted columns
+df = df.drop(columns=["CustomerID", "Genre", "Gender"], errors="ignore")
 
-    # 🔹 FORCE EXACT TRAINING COLUMN NAMES
-    df = df.rename(columns={
-        "Age": "Age",
-        "Annual Income (k$)": "Annual Income (k$)",
-        "Spending Score (1-100)": "Spending Score (1-100)"
-    })
+# EXACT FEATURES used in training
+X = df[[
+    "Age",
+    "Annual Income (k$)",
+    "Spending Score (1-100)"
+]]
 
-    # 🔹 SELECT EXACT FEATURES USED DURING TRAINING
-    X = df[[
-        "Age",
-        "Annual Income (k$)",
-        "Spending Score (1-100)"
-    ]]
+# Scale
+X_scaled = scaler.transform(X)
 
-    # 🔹 Scale
-    X_scaled = scaler.transform(X)
 
     # 🔹 Predict clusters
     df["Cluster"] = model.fit_predict(X_scaled)
