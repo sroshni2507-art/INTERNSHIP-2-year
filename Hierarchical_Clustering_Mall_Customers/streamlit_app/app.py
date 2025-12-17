@@ -5,71 +5,37 @@ import joblib
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 
-# -----------------------------
-# Load model & scaler safely
-# -----------------------------
 BASE_DIR = os.path.dirname(__file__)
 
-MODEL_PATH = os.path.join(BASE_DIR, "hierarchical_mall_customer.pkl")
-SCALER_PATH = os.path.join(BASE_DIR, "scaler.pkl")
+model = joblib.load(os.path.join(BASE_DIR, "hierarchical_mall_customer.pkl"))
+scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
 
-model = joblib.load(MODEL_PATH)
-scaler = joblib.load(SCALER_PATH)
-
-# -----------------------------
-# Streamlit UI
-# -----------------------------
 st.title("🛍️ Mall Customer Segmentation")
-st.write("Hierarchical Clustering using Saved .pkl Model")
+st.write("Hierarchical Clustering using Saved Model")
 
-uploaded_file = st.file_uploader(
-    "Upload Mall Customers CSV",
-    type=["csv"]
-)
+uploaded_file = st.file_uploader("Upload Mall Customers CSV", type=["csv"])
 
-if uploaded_file is not None:
+if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
-
-    # -----------------------------
-    # Preprocessing
-    # -----------------------------
     if "CustomerID" in df.columns:
-        df = df.drop("CustomerID", axis=1)
+        df.drop("CustomerID", axis=1, inplace=True)
 
     if "Gender" in df.columns:
         le = LabelEncoder()
         df["Gender"] = le.fit_transform(df["Gender"])
 
-    # Scaling
     X = scaler.transform(df)
 
-    # -----------------------------
-    # Clustering
-    # -----------------------------
     clusters = model.fit_predict(X)
     df["Cluster"] = clusters
 
-    st.subheader("Clustered Data")
-    st.dataframe(df)
+    st.dataframe(df.head())
 
-    # -----------------------------
-    # Visualization
-    # -----------------------------
-    st.subheader("Cluster Visualization")
-
-    plt.figure(figsize=(6, 4))
+    plt.figure()
     plt.scatter(
         df["Annual Income (k$)"],
         df["Spending Score (1-100)"],
         c=df["Cluster"]
     )
-    plt.xlabel("Annual Income (k$)")
-    plt.ylabel("Spending Score (1-100)")
-    plt.title("Hierarchical Clustering Output")
     st.pyplot(plt)
-
-else:
-    st.info("Please upload the Mall Customers CSV file.")
