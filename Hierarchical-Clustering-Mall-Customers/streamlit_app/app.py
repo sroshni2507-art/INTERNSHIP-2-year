@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 # Load model and scaler
-model = joblib.load("hierarchical_mall_customer(1).pkl")
+model = joblib.load("hierarchical_mall_customer.pkl")
 
 
 st.title("🛍️ Mall Customer Segmentation")
