@@ -17,6 +17,7 @@ uploaded_file = st.file_uploader("Upload Mall Customers CSV", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
+
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
@@ -26,11 +27,16 @@ if uploaded_file:
     if "CustomerID" in df.columns:
         df.drop("CustomerID", axis=1, inplace=True)
 
+    # 🔥 FIX: Rename Genre → Gender
+    if "Genre" in df.columns:
+        df.rename(columns={"Genre": "Gender"}, inplace=True)
+
+    # Encode Gender
     if "Gender" in df.columns:
         le = LabelEncoder()
         df["Gender"] = le.fit_transform(df["Gender"])
 
-    # ✅ IMPORTANT: select same features used during training
+    # ✅ Same features used during training
     feature_cols = [
         "Gender",
         "Age",
@@ -60,6 +66,7 @@ if uploaded_file:
     )
     plt.xlabel("Annual Income (k$)")
     plt.ylabel("Spending Score (1-100)")
+    plt.title("Hierarchical Clustering Output")
     st.pyplot(plt)
 
 else:
