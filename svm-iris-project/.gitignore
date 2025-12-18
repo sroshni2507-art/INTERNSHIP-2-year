@@ -1,8 +1,2 @@
 
----
-
-## 🟢 STEP 4: `.gitignore` (Optional but Recommended)
-
-```txt
-__pycache__/
 *.pkl
