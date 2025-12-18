@@ -1,23 +1,35 @@
+import streamlit as st
 import pickle
 import numpy as np
+import os
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 
-# Load model
-with open("model/svm_iris_model.pkl", "rb") as file:
+st.title("🌸 Iris Flower Classification – SVM")
+
+# -------- SAFE MODEL PATH --------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model", "svm_iris_model.pkl")
+
+# -------- LOAD MODEL --------
+with open(MODEL_PATH, "rb") as file:
     model = pickle.load(file)
 
-# Load iris data for feature reference
+# -------- LOAD DATA FOR SCALER --------
 iris = load_iris()
-
-# Sample input (can change values)
-sample_input = np.array([[5.1, 3.5, 1.4, 0.2]])
-
-# Scale input
 scaler = StandardScaler()
 scaler.fit(iris.data)
-sample_input = scaler.transform(sample_input)
 
-# Prediction
-prediction = model.predict(sample_input)
-print("Predicted Species:", iris.target_names[prediction][0])
+# -------- USER INPUT --------
+sepal_length = st.number_input("Sepal Length", 4.0, 8.0, 5.1)
+sepal_width  = st.number_input("Sepal Width", 2.0, 4.5, 3.5)
+petal_length = st.number_input("Petal Length", 1.0, 7.0, 1.4)
+petal_width  = st.number_input("Petal Width", 0.1, 2.5, 0.2)
+
+if st.button("Predict"):
+    input_data = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
+    input_scaled = scaler.transform(input_data)
+    prediction = model.predict(input_scaled)
+
+    st.success(f"🌼 Predicted Species: {iris.target_names[prediction][0]}")
+
