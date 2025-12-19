@@ -122,18 +122,18 @@ try:
     df = pd.read_csv(DATA_PATH)
 
     if "Mood" in df.columns and "Task" in df.columns:
-        # Create percentages per mood
-        heatmap_data = pd.crosstab(df["Mood"], df["Task"], normalize='index') * 100
+        # Create count table per mood/task
+        heatmap_data = pd.crosstab(df["Mood"], df["Task"])
 
-        # Create labels with % symbol
-        labels = heatmap_data.applymap(lambda x: f"{x:.1f}%")
+        # Create labels as strings
+        labels = heatmap_data.applymap(lambda x: f"{x} tasks" if x > 0 else "")
 
         # Plot heatmap
         fig, ax = plt.subplots(figsize=(10,6))
         sns.heatmap(
             heatmap_data,
-            annot=labels,   # use string labels with %
-            fmt="",         # no formatting needed
+            annot=labels,
+            fmt="",
             cmap="coolwarm",
             ax=ax
         )
