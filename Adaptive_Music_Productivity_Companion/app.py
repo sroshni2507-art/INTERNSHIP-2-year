@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
 import os
 
 # ---------------- PATH ----------------
@@ -57,16 +58,13 @@ with col2:
 if st.button("Get Recommendation"):
 
     # ---- RULE BASED MUSIC ----
-    if mood == "Sad" and activity == "Relaxing":
-        music_pred = "Calm Acoustic / Ambient"
-    elif mood == "Energetic" and activity == "Workout":
-        music_pred = "High BPM EDM / Hip-Hop"
-    elif mood == "Calm" and activity == "Studying":
-        music_pred = "Lo-fi / Instrumental"
-    elif mood == "Stressed" and activity == "Coding":
-        music_pred = "Low-lyric Electronic"
-    else:
-        music_pred = "Soft Background Music"
+    music_map = {
+        ("Sad", "Relaxing"): "Calm Acoustic / Ambient",
+        ("Energetic", "Workout"): "High BPM EDM / Hip-Hop",
+        ("Calm", "Studying"): "Lo-fi / Instrumental",
+        ("Stressed", "Coding"): "Low-lyric Electronic"
+    }
+    music_pred = music_map.get((mood, activity), "Soft Background Music")
 
     # ---- ENCODE INPUT ----
     X_user = np.array([[ 
@@ -81,10 +79,20 @@ if st.button("Get Recommendation"):
         nb_task.predict(X_user)
     )[0]
 
+    # ---- TIME-BASED SUGGESTIONS ----
+    time_suggestion = ""
+    if 5 <= time_of_day <= 11:
+        time_suggestion = "Morning Tip: Start your day with focused work or light exercise."
+    elif 12 <= time_of_day <= 17:
+        time_suggestion = "Afternoon Tip: Take a productive break or do creative tasks."
+    else:
+        time_suggestion = "Evening Tip: Relax or do light meditation before bed."
+
     # ---- OUTPUT ----
     st.subheader("✅ Recommendations")
     st.success(f"📋 Recommended Task: **{task_pred}**")
     st.info(f"🎧 Recommended Music Type: **{music_pred}**")
+    st.info(f"⏰ {time_suggestion}")
 
     # ---- OPTIONAL MUSIC LINKS ----
     playlist_links = {
@@ -97,15 +105,38 @@ if st.button("Get Recommendation"):
     if music_pred in playlist_links:
         st.markdown(f"[🎵 Listen Here]({playlist_links[music_pred]})")
 
+    # ---- TASK COMPLETION TRACKER ----
+    st.subheader("✔️ Task Completion")
+    task_status = st.radio(f"Did you complete **{task_pred}**?", ("Not yet", "Done", "Skipped"))
+
+    # ---------------- HISTORY LOG ----------------
+    HISTORY_PATH = os.path.join(BASE_DIR, "dataset", "recommendation_history.csv")
+    if not os.path.exists(os.path.join(BASE_DIR, "dataset")):
+        os.makedirs(os.path.join(BASE_DIR, "dataset"))
+
+    history_entry = pd.DataFrame([{
+        "Mood": mood,
+        "Activity": activity,
+        "Goal": goal,
+        "Time": time_of_day,
+        "Recommended Task": task_pred,
+        "Music": music_pred,
+        "Status": task_status
+    }])
+
+    if os.path.exists(HISTORY_PATH):
+        history_entry.to_csv(HISTORY_PATH, mode='a', header=False, index=False)
+    else:
+        history_entry.to_csv(HISTORY_PATH, index=False)
+
 # ---------------- VISUALIZATION ----------------
 st.subheader("📊 Mood vs Task Heatmap")
 
-# Path to dataset
+# Path to dataset CSV
 DATA_PATH = os.path.join(BASE_DIR, "dataset", "smart_study_data.csv")
 
 # Create sample CSV if missing
 if not os.path.exists(DATA_PATH):
-    os.makedirs(os.path.join(BASE_DIR, "dataset"), exist_ok=True)
     sample_data = pd.DataFrame({
         "Mood": ["Happy", "Sad", "Calm", "Energetic", "Stressed", "Calm", "Happy",
                  "Energetic", "Sad", "Happy", "Calm", "Stressed", "Energetic", "Happy",
@@ -115,60 +146,51 @@ if not os.path.exists(DATA_PATH):
                  "Research", "Nap", "Gym", "Project", "Painting", "Organize"]
     })
     sample_data.to_csv(DATA_PATH, index=False)
-    st.info("Sample dataset created as 'smart_study_data.csv' for visualization.")
 
-# Load CSV
 try:
     df = pd.read_csv(DATA_PATH)
 
     if "Mood" in df.columns and "Task" in df.columns:
-        # Count table
+        # Interactive Plotly heatmap
         heatmap_data = pd.crosstab(df["Mood"], df["Task"])
-        labels = heatmap_data.applymap(lambda x: f"{x} tasks" if x > 0 else "")
-
-        # Plot
-        fig, ax = plt.subplots(figsize=(10,6))
-        sns.heatmap(
+        fig = px.imshow(
             heatmap_data,
-            annot=labels,
-            fmt="",
-            cmap="coolwarm",
-            ax=ax
+            text_auto=True,
+            color_continuous_scale='RdBu',
+            labels=dict(x="Task", y="Mood", color="Count"),
+            title="Mood vs Task Heatmap (Interactive)"
         )
-        ax.set_title("Mood vs Task Heatmap", fontsize=16)
-        ax.set_xlabel("Task", fontsize=12)
-        ax.set_ylabel("Mood", fontsize=12)
+        st.plotly_chart(fig)
 
-        st.pyplot(fig)
     else:
         st.warning("Columns 'Mood' or 'Task' not found in dataset.")
-
 except Exception as e:
     st.error(f"Error loading or processing CSV: {e}")
 
-# ---------------- TASK & MOOD HISTORY ----------------
+# ---------------- HISTORY TABLE & DOWNLOAD ----------------
 st.subheader("📝 Recommendation History")
 
-# Path for history log
-HISTORY_PATH = os.path.join(BASE_DIR, "dataset", "recommendation_history.csv")
-
-# Save current recommendation if available
-if 'task_pred' in locals() and 'music_pred' in locals():
-    history_entry = pd.DataFrame([{
-        "Mood": mood,
-        "Activity": activity,
-        "Goal": goal,
-        "Time": time_of_day,
-        "Recommended Task": task_pred,
-        "Music": music_pred
-    }])
-    
-    if os.path.exists(HISTORY_PATH):
-        history_entry.to_csv(HISTORY_PATH, mode='a', header=False, index=False)
-    else:
-        history_entry.to_csv(HISTORY_PATH, index=False)
-
-# Display history table
 if os.path.exists(HISTORY_PATH):
     history_df = pd.read_csv(HISTORY_PATH)
     st.dataframe(history_df)
+
+    # Download button
+    csv = history_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Recommendation History",
+        data=csv,
+        file_name='recommendation_history.csv',
+        mime='text/csv'
+    )
+
+# ---------------- ANALYTICS ----------------
+st.subheader("📊 Mood & Task Analytics")
+
+if os.path.exists(HISTORY_PATH):
+    # Most common moods
+    mood_counts = history_df['Mood'].value_counts()
+    st.bar_chart(mood_counts)
+
+    # Most recommended tasks
+    task_counts = history_df['Recommended Task'].value_counts()
+    st.bar_chart(task_counts)
