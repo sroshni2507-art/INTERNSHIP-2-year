@@ -5,10 +5,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load models and encoders
-nb_task = pickle.load(open('nb_task.pkl', 'rb'))
-knn_music = pickle.load(open('knn_music.pkl', 'rb'))
-encoders = pickle.load(open('encoders.pkl', 'rb'))
+import os
+
+
+BASE_DIR = os.path.dirname(__file__)
+
+nb_task = pickle.load(open(os.path.join(BASE_DIR, "nb_task.pkl"), "rb"))
+encoders = pickle.load(open(os.path.join(BASE_DIR, "encoders.pkl"), "rb"))
+apriori_rules = pickle.load(open(os.path.join(BASE_DIR, "apriori_rules.pkl"), "rb"))
+
 
 # Streamlit app
 st.set_page_config(page_title="Adaptive Music & Productivity Companion", layout="wide")
