@@ -122,13 +122,11 @@ try:
     df = pd.read_csv(DATA_PATH)
 
     if "Mood" in df.columns and "Task" in df.columns:
-        # Create count table per mood/task
+        # Count table
         heatmap_data = pd.crosstab(df["Mood"], df["Task"])
-
-        # Create labels as strings
         labels = heatmap_data.applymap(lambda x: f"{x} tasks" if x > 0 else "")
 
-        # Plot heatmap
+        # Plot
         fig, ax = plt.subplots(figsize=(10,6))
         sns.heatmap(
             heatmap_data,
@@ -147,3 +145,30 @@ try:
 
 except Exception as e:
     st.error(f"Error loading or processing CSV: {e}")
+
+# ---------------- TASK & MOOD HISTORY ----------------
+st.subheader("📝 Recommendation History")
+
+# Path for history log
+HISTORY_PATH = os.path.join(BASE_DIR, "dataset", "recommendation_history.csv")
+
+# Save current recommendation if available
+if 'task_pred' in locals() and 'music_pred' in locals():
+    history_entry = pd.DataFrame([{
+        "Mood": mood,
+        "Activity": activity,
+        "Goal": goal,
+        "Time": time_of_day,
+        "Recommended Task": task_pred,
+        "Music": music_pred
+    }])
+    
+    if os.path.exists(HISTORY_PATH):
+        history_entry.to_csv(HISTORY_PATH, mode='a', header=False, index=False)
+    else:
+        history_entry.to_csv(HISTORY_PATH, index=False)
+
+# Display history table
+if os.path.exists(HISTORY_PATH):
+    history_df = pd.read_csv(HISTORY_PATH)
+    st.dataframe(history_df)
