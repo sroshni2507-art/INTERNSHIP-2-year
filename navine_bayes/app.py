@@ -1,27 +1,41 @@
 import streamlit as st
 import pickle
 import pandas as pd
-import os  # ✅ Import os for file path handling
+import os
 
-# Get the path of the current script
+# -------------------- LOAD MODEL SAFELY --------------------
 BASE_DIR = os.path.dirname(__file__)
-MODEL_PATH = os.path.join(BASE_DIR, "naive_bayes_model.pkl")  # Full path to your model
+MODEL_PATH = os.path.join(BASE_DIR, "naive_bayes.pkl")
 
-# Load your Naive Bayes model
 with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
 
+# -------------------- PAGE SETUP --------------------
 st.set_page_config(page_title="Naive Bayes Predictor", layout="centered")
 st.title("Naive Bayes Predictor 🧠")
 
-# Example: 2 input features (change based on your model)
-feature1 = st.text_input("Enter Feature 1:")
-feature2 = st.text_input("Enter Feature 2:")
+# -------------------- GET FEATURE NAMES FROM MODEL --------------------
+try:
+    feature_names = model.feature_names_in_
+except AttributeError:
+    st.error("❌ This model was trained without feature names.")
+    st.stop()
 
+# -------------------- USER INPUTS --------------------
+st.subheader("Enter Input Values")
+
+user_inputs = {}
+for feature in feature_names:
+    user_inputs[feature] = st.text_input(f"{feature}")
+
+# -------------------- PREDICTION --------------------
 if st.button("Predict"):
-    # Convert input to DataFrame
-    input_df = pd.DataFrame([[feature1, feature2]], columns=["Feature1", "Feature2"])
-    
-    # Predict
-    prediction = model.predict(input_df)
-    st.success(f"Prediction: {prediction[0]}")
+    input_df = pd.DataFrame([user_inputs])
+
+    try:
+        prediction = model.predict(input_df)
+        st.success(f"Prediction: {prediction[0]}")
+    except Exception as e:
+        st.error("Prediction failed. Check input format.")
+        st.exception(e)
+
