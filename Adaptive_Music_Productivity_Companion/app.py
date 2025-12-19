@@ -10,8 +10,12 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 
 # ---------------- LOAD MODELS ----------------
-nb_task = pickle.load(open(os.path.join(BASE_DIR, "nb_task.pkl"), "rb"))
-encoders = pickle.load(open(os.path.join(BASE_DIR, "encoders.pkl"), "rb"))
+try:
+    nb_task = pickle.load(open(os.path.join(BASE_DIR, "nb_task.pkl"), "rb"))
+    encoders = pickle.load(open(os.path.join(BASE_DIR, "encoders.pkl"), "rb"))
+except Exception as e:
+    st.error(f"Error loading models: {e}")
+    st.stop()
 
 # ---------------- STREAMLIT CONFIG ----------------
 st.set_page_config(
@@ -52,7 +56,7 @@ with col2:
 # ---------------- PREDICTION ----------------
 if st.button("Get Recommendation"):
 
-    # ---- RULE BASED MUSIC (NO ERROR) ----
+    # ---- RULE BASED MUSIC ----
     if mood == "Sad" and activity == "Relaxing":
         music_pred = "Calm Acoustic / Ambient"
     elif mood == "Energetic" and activity == "Workout":
@@ -65,14 +69,14 @@ if st.button("Get Recommendation"):
         music_pred = "Soft Background Music"
 
     # ---- ENCODE INPUT ----
-    X_user = np.array([[
+    X_user = np.array([[ 
         encoders["le_mood"].transform([mood])[0],
         encoders["le_activity"].transform([activity])[0],
         time_of_day,
         encoders["le_goal"].transform([goal])[0]
     ]])
 
-    # ---- TASK PREDICTION (Naive Bayes) ----
+    # ---- TASK PREDICTION ----
     task_pred = encoders["le_task"].inverse_transform(
         nb_task.predict(X_user)
     )[0]
@@ -99,32 +103,33 @@ st.subheader("📊 Mood vs Task Heatmap")
 # Path to dataset
 DATA_PATH = os.path.join(BASE_DIR, "dataset", "smart_study_data.csv")
 
-if os.path.exists(DATA_PATH):
-    try:
-        # Load CSV
-        df = pd.read_csv(DATA_PATH)
+# Create sample CSV if missing
+if not os.path.exists(DATA_PATH):
+    os.makedirs(os.path.join(BASE_DIR, "dataset"), exist_ok=True)
+    sample_data = pd.DataFrame({
+        "Mood": ["Happy", "Sad", "Calm", "Energetic", "Stressed", "Calm", "Happy"],
+        "Task": ["Study", "Relax", "Reading", "Workout", "Coding", "Meditation", "Exercise"]
+    })
+    sample_data.to_csv(DATA_PATH, index=False)
+    st.info("Sample dataset created as 'smart_study_data.csv' for visualization.")
 
-        # Check if required columns exist
-        if "Mood" in df.columns and "Task" in df.columns:
-            # Create heatmap data
-            heatmap_data = pd.crosstab(df["Mood"], df["Task"])
+# Load CSV
+try:
+    df = pd.read_csv(DATA_PATH)
 
-            # Plot heatmap
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.heatmap(
-                heatmap_data,
-                annot=True,
-                fmt="d",
-                cmap="coolwarm",
-                ax=ax
-            )
-            st.pyplot(fig)
-        else:
-            st.warning("Columns 'Mood' or 'Task' not found in dataset.")
+    if "Mood" in df.columns and "Task" in df.columns:
+        heatmap_data = pd.crosstab(df["Mood"], df["Task"])
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.heatmap(
+            heatmap_data,
+            annot=True,
+            fmt="d",
+            cmap="coolwarm",
+            ax=ax
+        )
+        st.pyplot(fig)
+    else:
+        st.warning("Columns 'Mood' or 'Task' not found in dataset.")
 
-    except Exception as e:
-        st.error(f"Error loading or processing CSV: {e}")
-else:
-    st.error(
-        f"Dataset not found!\nPlease place 'smart_study_data.csv' in the folder:\n{os.path.join(BASE_DIR, 'dataset')}"
-    )
+except Exception as e:
+    st.error(f"Error loading or processing CSV: {e}")
