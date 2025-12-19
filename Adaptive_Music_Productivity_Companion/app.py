@@ -125,12 +125,15 @@ try:
         # Create percentages per mood
         heatmap_data = pd.crosstab(df["Mood"], df["Task"], normalize='index') * 100
 
+        # Create labels with % symbol
+        labels = heatmap_data.applymap(lambda x: f"{x:.1f}%")
+
         # Plot heatmap
         fig, ax = plt.subplots(figsize=(10,6))
         sns.heatmap(
             heatmap_data,
-            annot=True,
-            fmt=".1f%%",
+            annot=labels,   # use string labels with %
+            fmt="",         # no formatting needed
             cmap="coolwarm",
             ax=ax
         )
