@@ -5,7 +5,7 @@ import os  # ✅ Import os for file path handling
 
 # Get the path of the current script
 BASE_DIR = os.path.dirname(__file__)
-MODEL_PATH = os.path.join(BASE_DIR, "nb_model.pkl")  # Full path to your model
+MODEL_PATH = os.path.join(BASE_DIR, "naive_bayes_model.pkl")  # Full path to your model
 
 # Load your Naive Bayes model
 with open(MODEL_PATH, "rb") as f:
