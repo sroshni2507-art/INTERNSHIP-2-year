@@ -34,6 +34,21 @@ with col2:
 
 # --- Predict ---
 if st.button("Get Recommendation"):
+    
+    # Rule-based music recommendation
+    if mood == "Sad" and activity == "Relaxing":
+        music_pred = "Calm Acoustic / Ambient"
+    elif mood == "Energetic" and activity == "Workout":
+        music_pred = "High BPM EDM / Hip-Hop"
+    elif mood == "Calm" and activity == "Studying":
+        music_pred = "Lo-fi / Instrumental"
+    elif mood == "Stressed" and activity == "Coding":
+        music_pred = "Low-lyric Electronic"
+    else:
+        music_pred = "Soft Background Music"
+
+    st.success(f"🎧 Recommended Music Type: {music_pred}")
+
     # Encode inputs
     X_user = np.array([[encoders['le_mood'].transform([mood])[0],
                         encoders['le_activity'].transform([activity])[0],
