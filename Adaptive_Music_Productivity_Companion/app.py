@@ -150,34 +150,39 @@ elif page == "History":
     st.markdown("<h2 style='color:#FF9800;'>📝 Recommendation History</h2>", unsafe_allow_html=True)
     try:
         history_df = pd.read_csv(HISTORY_PATH, on_bad_lines='skip')
-        if not history_df.empty:
-            # Add emojis for tasks
-            task_emojis = {
-                "Study": "📚",
-                "Workout": "🏋️‍♂️",
-                "Meditation": "🧘‍♀️",
-                "Coding": "💻",
-                "Relax": "😌",
-                "Reading": "📖",
-                "Exercise": "🏃‍♂️",
-                "Yoga": "🧘",
-                "Project": "📁",
-                "Painting": "🎨",
-                "Nap": "😴",
-                "Debug": "🐞"
-            }
-            history_df["Task Emoji"] = history_df["Recommended Task"].map(task_emojis)
-            st.dataframe(history_df[["Mood", "Recommended Task", "Task Emoji", "Status"]])
 
-            csv = history_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download History",
-                data=csv,
-                file_name='recommendation_history.csv',
-                mime='text/csv'
-            )
-        else:
-            st.info("No history available yet.")
+        # Ensure required columns exist
+        required_cols = ["Mood", "Activity", "Goal", "Time", "Recommended Task", "Music", "Status"]
+        for col in required_cols:
+            if col not in history_df.columns:
+                history_df[col] = "Not recorded"
+
+        # Add emojis for tasks
+        task_emojis = {
+            "Study": "📚",
+            "Workout": "🏋️‍♂️",
+            "Meditation": "🧘‍♀️",
+            "Coding": "💻",
+            "Relax": "😌",
+            "Reading": "📖",
+            "Exercise": "🏃‍♂️",
+            "Yoga": "🧘",
+            "Project": "📁",
+            "Painting": "🎨",
+            "Nap": "😴",
+            "Debug": "🐞"
+        }
+        history_df["Task Emoji"] = history_df["Recommended Task"].map(task_emojis)
+
+        st.dataframe(history_df[["Mood", "Recommended Task", "Task Emoji", "Status"]])
+
+        csv = history_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download History",
+            data=csv,
+            file_name='recommendation_history.csv',
+            mime='text/csv'
+        )
     except FileNotFoundError:
         st.info("No history available yet.")
     except Exception as e:
