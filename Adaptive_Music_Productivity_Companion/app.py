@@ -107,8 +107,12 @@ DATA_PATH = os.path.join(BASE_DIR, "dataset", "smart_study_data.csv")
 if not os.path.exists(DATA_PATH):
     os.makedirs(os.path.join(BASE_DIR, "dataset"), exist_ok=True)
     sample_data = pd.DataFrame({
-        "Mood": ["Happy", "Sad", "Calm", "Energetic", "Stressed", "Calm", "Happy"],
-        "Task": ["Study", "Relax", "Reading", "Workout", "Coding", "Meditation", "Exercise"]
+        "Mood": ["Happy", "Sad", "Calm", "Energetic", "Stressed", "Calm", "Happy",
+                 "Energetic", "Sad", "Happy", "Calm", "Stressed", "Energetic", "Happy",
+                 "Calm", "Sad", "Energetic", "Happy", "Calm", "Stressed"],
+        "Task": ["Study", "Relax", "Reading", "Workout", "Coding", "Meditation", "Exercise",
+                 "Run", "Watch Movie", "Write", "Yoga", "Debug", "Cycling", "Presentation",
+                 "Research", "Nap", "Gym", "Project", "Painting", "Organize"]
     })
     sample_data.to_csv(DATA_PATH, index=False)
     st.info("Sample dataset created as 'smart_study_data.csv' for visualization.")
@@ -118,15 +122,22 @@ try:
     df = pd.read_csv(DATA_PATH)
 
     if "Mood" in df.columns and "Task" in df.columns:
-        heatmap_data = pd.crosstab(df["Mood"], df["Task"])
-        fig, ax = plt.subplots(figsize=(8, 5))
+        # Create percentages per mood
+        heatmap_data = pd.crosstab(df["Mood"], df["Task"], normalize='index') * 100
+
+        # Plot heatmap
+        fig, ax = plt.subplots(figsize=(10,6))
         sns.heatmap(
             heatmap_data,
             annot=True,
-            fmt="d",
+            fmt=".1f%%",
             cmap="coolwarm",
             ax=ax
         )
+        ax.set_title("Mood vs Task Heatmap", fontsize=16)
+        ax.set_xlabel("Task", fontsize=12)
+        ax.set_ylabel("Mood", fontsize=12)
+
         st.pyplot(fig)
     else:
         st.warning("Columns 'Mood' or 'Task' not found in dataset.")
