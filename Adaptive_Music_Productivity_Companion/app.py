@@ -17,10 +17,7 @@ except Exception as e:
     st.stop()
 
 # ---------------- STREAMLIT CONFIG ----------------
-st.set_page_config(
-    page_title="Adaptive Music & Productivity Companion",
-    layout="wide"
-)
+st.set_page_config(page_title="🎵 Adaptive Music Companion", layout="wide")
 
 # ---------------- SIDEBAR NAVIGATION ----------------
 st.sidebar.title("🎵 Navigation")
@@ -46,17 +43,17 @@ if not os.path.exists(DATA_PATH):
 
 # ---------------- PAGE: HOME ----------------
 if page == "Home":
-    st.title("🎵 Adaptive Music & Productivity Companion")
+    st.markdown("<h1 style='color:#4CAF50;'>🎵 Adaptive Music & Productivity Companion</h1>", unsafe_allow_html=True)
     st.markdown("""
-        Welcome! This app recommends **tasks** and **music** based on your mood, activity, time, and goal.
+        Welcome! This app recommends **tasks** and **music** based on your **mood, activity, time, and goal**.  
         Use the sidebar to navigate between sections.
     """)
 
 # ---------------- PAGE: RECOMMENDATIONS ----------------
 elif page == "Recommendations":
-    st.header("📋 Get Your Personalized Recommendations")
-    col1, col2 = st.columns(2)
+    st.markdown("<h2 style='color:#FF5733;'>📋 Get Your Personalized Recommendations</h2>", unsafe_allow_html=True)
 
+    col1, col2 = st.columns(2)
     with col1:
         mood = st.selectbox("Select Your Mood:", encoders["le_mood"].classes_)
         activity = st.selectbox("Select Your Activity:", encoders["le_activity"].classes_)
@@ -88,17 +85,20 @@ elif page == "Recommendations":
 
         # ---- Time-Based Tip ----
         if 5 <= time_of_day <= 11:
-            time_tip = "Morning Tip: Start your day with focused work or light exercise."
+            time_tip = "🌅 Morning Tip: Start your day with focused work or light exercise."
         elif 12 <= time_of_day <= 17:
-            time_tip = "Afternoon Tip: Take a productive break or do creative tasks."
+            time_tip = "☀️ Afternoon Tip: Take a productive break or do creative tasks."
         else:
-            time_tip = "Evening Tip: Relax or do light meditation before bed."
+            time_tip = "🌙 Evening Tip: Relax or do light meditation before bed."
 
-        # ---- Display Recommendations ----
-        st.subheader("✅ Recommendations")
-        st.success(f"📋 Task: **{task_pred}**")
-        st.info(f"🎧 Music: **{music_pred}**")
-        st.info(f"⏰ {time_tip}")
+        # ---- Display Recommendations in Columns ----
+        col1_card, col2_card = st.columns(2)
+        with col1_card:
+            st.markdown(f"<div style='background-color:#fce4ec; padding:10px; border-radius:10px;'>📋 Task Recommendation:<br><b>{task_pred}</b></div>", unsafe_allow_html=True)
+        with col2_card:
+            st.markdown(f"<div style='background-color:#e8f5e9; padding:10px; border-radius:10px;'>🎧 Music Recommendation:<br><b>{music_pred}</b></div>", unsafe_allow_html=True)
+
+        st.info(time_tip)
 
         # ---- Music Embed ----
         playlist_links = {
@@ -130,16 +130,16 @@ elif page == "Recommendations":
 
 # ---------------- PAGE: MOOD VS TASK HEATMAP ----------------
 elif page == "Mood vs Task Heatmap":
-    st.header("📊 Mood vs Task Heatmap")
+    st.markdown("<h2 style='color:#673AB7;'>📊 Mood vs Task Heatmap</h2>", unsafe_allow_html=True)
     try:
         df = pd.read_csv(DATA_PATH)
         heatmap_data = pd.crosstab(df["Mood"], df["Task"])
         fig = px.imshow(
             heatmap_data,
             text_auto=True,
-            color_continuous_scale='RdBu',
+            color_continuous_scale='Viridis',
             labels=dict(x="Task", y="Mood", color="Count"),
-            title="Mood vs Task Heatmap"
+            title="🌈 Mood vs Task Heatmap"
         )
         st.plotly_chart(fig)
     except Exception as e:
@@ -147,11 +147,28 @@ elif page == "Mood vs Task Heatmap":
 
 # ---------------- PAGE: HISTORY ----------------
 elif page == "History":
-    st.header("📝 Recommendation History")
+    st.markdown("<h2 style='color:#FF9800;'>📝 Recommendation History</h2>", unsafe_allow_html=True)
     try:
         history_df = pd.read_csv(HISTORY_PATH, on_bad_lines='skip')
         if not history_df.empty:
-            st.dataframe(history_df)
+            # Add emojis for tasks
+            task_emojis = {
+                "Study": "📚",
+                "Workout": "🏋️‍♂️",
+                "Meditation": "🧘‍♀️",
+                "Coding": "💻",
+                "Relax": "😌",
+                "Reading": "📖",
+                "Exercise": "🏃‍♂️",
+                "Yoga": "🧘",
+                "Project": "📁",
+                "Painting": "🎨",
+                "Nap": "😴",
+                "Debug": "🐞"
+            }
+            history_df["Task Emoji"] = history_df["Recommended Task"].map(task_emojis)
+            st.dataframe(history_df[["Mood", "Recommended Task", "Task Emoji", "Status"]])
+
             csv = history_df.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download History",
@@ -168,7 +185,7 @@ elif page == "History":
 
 # ---------------- PAGE: ANALYTICS ----------------
 elif page == "Analytics":
-    st.header("📊 Mood & Task Analytics")
+    st.markdown("<h2 style='color:#009688;'>📊 Mood & Task Analytics</h2>", unsafe_allow_html=True)
     try:
         history_df = pd.read_csv(HISTORY_PATH, on_bad_lines='skip')
         if not history_df.empty:
