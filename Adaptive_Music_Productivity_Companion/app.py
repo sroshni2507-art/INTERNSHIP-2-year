@@ -167,21 +167,51 @@ try:
 except Exception as e:
     st.error(f"Error loading or processing CSV: {e}")
 
-# ---------------- HISTORY TABLE & DOWNLOAD ----------------
+# ---------------- HISTORY LOG & DISPLAY ----------------
 st.subheader("📝 Recommendation History")
 
-if os.path.exists(HISTORY_PATH):
-    history_df = pd.read_csv(HISTORY_PATH)
-    st.dataframe(history_df)
+HISTORY_PATH = os.path.join(BASE_DIR, "dataset", "recommendation_history.csv")
+if not os.path.exists(os.path.join(BASE_DIR, "dataset")):
+    os.makedirs(os.path.join(BASE_DIR, "dataset"))
 
-    # Download button
-    csv = history_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Download Recommendation History",
-        data=csv,
-        file_name='recommendation_history.csv',
-        mime='text/csv'
-    )
+# Save current recommendation safely
+if 'task_pred' in locals() and 'music_pred' in locals():
+    history_entry = pd.DataFrame([{
+        "Mood": mood,
+        "Activity": activity,
+        "Goal": goal,
+        "Time": time_of_day,
+        "Recommended Task": task_pred,
+        "Music": music_pred,
+        "Status": task_status
+    }])
+
+    try:
+        # Append safely, create file if missing
+        history_entry.to_csv(HISTORY_PATH, mode='a', header=not os.path.exists(HISTORY_PATH), index=False)
+    except Exception as e:
+        st.warning(f"Failed to save history entry: {e}")
+
+# Load history safely
+try:
+    history_df = pd.read_csv(HISTORY_PATH, on_bad_lines='skip')  # skips malformed lines
+    if not history_df.empty:
+        st.dataframe(history_df)
+
+        # Download button
+        csv = history_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Recommendation History",
+            data=csv,
+            file_name='recommendation_history.csv',
+            mime='text/csv'
+        )
+    else:
+        st.info("No recommendation history available yet.")
+except FileNotFoundError:
+    st.info("No recommendation history available yet.")
+except Exception as e:
+    st.error(f"Failed to load recommendation history: {e}")
 
 # ---------------- ANALYTICS ----------------
 st.subheader("📊 Mood & Task Analytics")
