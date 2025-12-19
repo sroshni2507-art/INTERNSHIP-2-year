@@ -96,19 +96,35 @@ if st.button("Get Recommendation"):
 # ---------------- VISUALIZATION ----------------
 st.subheader("📊 Mood vs Task Heatmap")
 
-df = pd.read_csv(
-    os.path.join(BASE_DIR, "dataset", "smart_study_data.csv")
-)
+# Path to dataset
+DATA_PATH = os.path.join(BASE_DIR, "dataset", "smart_study_data.csv")
 
-heatmap_data = pd.crosstab(df["Mood"], df["Task"])
+if os.path.exists(DATA_PATH):
+    try:
+        # Load CSV
+        df = pd.read_csv(DATA_PATH)
 
-fig, ax = plt.subplots(figsize=(6, 4))
-sns.heatmap(
-    heatmap_data,
-    annot=True,
-    fmt="d",
-    cmap="coolwarm",
-    ax=ax
-)
+        # Check if required columns exist
+        if "Mood" in df.columns and "Task" in df.columns:
+            # Create heatmap data
+            heatmap_data = pd.crosstab(df["Mood"], df["Task"])
 
-st.pyplot(fig)
+            # Plot heatmap
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.heatmap(
+                heatmap_data,
+                annot=True,
+                fmt="d",
+                cmap="coolwarm",
+                ax=ax
+            )
+            st.pyplot(fig)
+        else:
+            st.warning("Columns 'Mood' or 'Task' not found in dataset.")
+
+    except Exception as e:
+        st.error(f"Error loading or processing CSV: {e}")
+else:
+    st.error(
+        f"Dataset not found!\nPlease place 'smart_study_data.csv' in the folder:\n{os.path.join(BASE_DIR, 'dataset')}"
+    )
