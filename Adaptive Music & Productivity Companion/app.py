@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load models and encoders
-nb_task = pickle.load(open('model/nb_task.pkl', 'rb'))
-knn_music = pickle.load(open('model/knn_music.pkl', 'rb'))
-encoders = pickle.load(open('model/encoders.pkl', 'rb'))
+nb_task = pickle.load(open('nb_task.pkl', 'rb'))
+knn_music = pickle.load(open('knn_music.pkl', 'rb'))
+encoders = pickle.load(open('encoders.pkl', 'rb'))
 
 # Streamlit app
 st.set_page_config(page_title="Adaptive Music & Productivity Companion", layout="wide")
