@@ -3,120 +3,108 @@ import librosa
 import numpy as np
 import soundfile as sf
 import io
+import speech_recognition as sr
 from gtts import gTTS
 
-# App Branding
-st.set_page_config(page_title="SoundSense AI Pro", layout="wide", page_icon="🎵")
-st.title("🎵 SoundSense: All-in-One AI Song Generator")
-st.write("Convert your Live Voice, Uploaded Files, or Text into synthesized music.")
+# App Setup
+st.set_page_config(page_title="Voice-to-Lyrics-to-Song", layout="wide", page_icon="🎤")
+st.title("🎤 AI Lyricist & Song Generator")
+st.write("Flow: Record Voice ➔ Convert to Text ➔ Edit Lyrics ➔ Generate Song")
 
-# -------- SIDEBAR: CUSTOMIZATION --------
-st.sidebar.header("🔊 Audio & Volume Settings")
-vol_boost = st.sidebar.slider("Volume Level (Boost)", 1.0, 10.0, 4.0)
-synth_style = st.sidebar.selectbox(
-    "Synthesizer Style", 
-    ["Square (Loud/Electronic)", "Sine (Soft/Whistle)", "Triangle (Smooth)"]
-)
+# -------- SIDEBAR SETTINGS --------
+st.sidebar.header("🔊 Volume & Style")
+vol_boost = st.sidebar.slider("Volume Gain", 1.0, 10.0, 5.0)
+wave_style = st.sidebar.selectbox("Synth Style", ["Square (Loud)", "Sine (Soft)", "Triangle"])
 
-# -------- CORE ENGINE: VOICE TO MUSIC --------
-def synthesize_music(audio_input, boost=4.0, style="Square (Loud/Electronic)"):
-    # Load audio
-    y, sr = librosa.load(audio_input, sr=None)
-    
-    # 1. Extract Pitch (f0)
+# -------- HELPER FUNCTIONS --------
+
+# 1. Convert Audio to Text (Speech Recognition)
+def speech_to_text(audio_bytes):
+    r = sr.Recognizer()
+    # Convert BytesIO to AudioFile
+    audio_data = io.BytesIO(audio_bytes.read())
+    with sr.AudioFile(audio_data) as source:
+        audio = r.record(source)
+    try:
+        text = r.recognize_google(audio)
+        return text
+    except:
+        return "Could not understand audio. Please try speaking clearly."
+
+# 2. Convert Voice to Musical Melody (Synthesis)
+def synthesize_melody(audio_input, boost=5.0, style="Square (Loud)"):
+    y, sample_rate = librosa.load(audio_input, sr=None)
     hop_length = 512
-    f0, voiced_flag, voiced_probs = librosa.pyin(
-        y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), sr=sr
-    )
+    f0, _, _ = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), sr=sample_rate)
     f0_cleaned = np.nan_to_num(f0)
     
     if np.max(f0_cleaned) == 0:
         return None, None
 
-    # 2. Fix Duration (Match frames to samples)
     total_samples = len(f0_cleaned) * hop_length
-    f0_upsampled = np.interp(
-        np.arange(total_samples), 
-        np.arange(0, total_samples, hop_length), 
-        f0_cleaned
-    )
+    f0_upsampled = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), f0_cleaned)
 
-    # 3. Create Waveform
-    phase = 2 * np.pi * np.cumsum(f0_upsampled) / sr
-    
-    if style == "Square (Loud/Electronic)":
-        music = np.sign(np.sin(phase)) # Very loud energy
-    elif style == "Sine (Soft/Whistle)":
+    phase = 2 * np.pi * np.cumsum(f0_upsampled) / sample_rate
+    if style == "Square (Loud)":
+        music = np.sign(np.sin(phase))
+    elif style == "Sine (Soft)":
         music = np.sin(phase)
-    else: # Triangle
+    else:
         music = 2 * np.abs(2 * (phase / (2 * np.pi) - np.floor(phase / (2 * np.pi) + 0.5))) - 1
 
-    # 4. Boost Volume & Prevent Distortion
-    music = music * boost
-    music = np.clip(music, -1.0, 1.0) 
-    
-    return music, sr
+    music = np.clip(music * boost, -1.0, 1.0)
+    return music, sample_rate
 
-# -------- USER INTERFACE TABS --------
-tab1, tab2, tab3 = st.tabs(["🎤 Live Recording", "📤 Upload Audio", "📝 Text to Song"])
+# -------- MAIN APP FLOW --------
 
-# TAB 1: LIVE RECORDING
-with tab1:
-    st.subheader("Record Live Voice")
-    recorded_audio = st.audio_input("Click the mic to record")
-    
-    if recorded_audio:
-        if st.button("Convert Recording to Song"):
-            with st.spinner("Generating melody..."):
-                music, sr = synthesize_music(recorded_audio, vol_boost, synth_style)
-                if music is not None:
-                    buf = io.BytesIO()
-                    sf.write(buf, music, sr, format='WAV')
-                    st.audio(buf)
-                    st.download_button("Download Song", buf, "live_record_song.wav")
-                else:
-                    st.error("Could not detect pitch. Try singing more clearly.")
+# STEP 1: RECORD VOICE
+st.subheader("Step 1: Record your message/idea")
+recorded_voice = st.audio_input("Speak into the mic")
 
-# TAB 2: UPLOAD OPTION
-with tab2:
-    st.subheader("Upload Audio File")
-    uploaded_file = st.file_uploader("Choose a .wav or .mp3 file", type=["wav", "mp3"])
-    
-    if uploaded_file:
-        st.audio(uploaded_file)
-        if st.button("Convert Upload to Song"):
-            with st.spinner("Processing file..."):
-                music, sr = synthesize_music(uploaded_file, vol_boost, synth_style)
-                if music is not None:
-                    buf = io.BytesIO()
-                    sf.write(buf, music, sr, format='WAV')
-                    st.audio(buf)
-                    st.download_button("Download Uploaded Song", buf, "upload_song.wav")
-                else:
-                    st.error("No clear pitch found in this file.")
+if recorded_voice:
+    # STEP 2: SPEECH TO TEXT
+    if 'transcribed_text' not in st.session_state:
+        with st.spinner("Converting voice to text..."):
+            text = speech_to_text(recorded_voice)
+            st.session_state.transcribed_text = text
 
-# TAB 3: TEXT TO SONG
-with tab3:
-    st.subheader("Convert Text to Song")
-    user_text = st.text_area("Enter your lyrics/text:", "Music is the language of the soul.")
+    st.success("Transcribed Text Found!")
     
-    if st.button("Generate Music from Text"):
-        if user_text:
-            with st.spinner("Converting text to speech..."):
-                # Use Google Text-to-Speech
-                tts = gTTS(text=user_text, lang='en')
-                tts_buf = io.BytesIO()
-                tts.write_to_fp(tts_buf)
-                tts_buf.seek(0)
+    # STEP 3: EDIT LYRICS
+    st.subheader("Step 2: Refine your Lyrics")
+    lyrics = st.text_area("Edit the text below to make it sound like lyrics:", st.session_state.transcribed_text)
+    
+    if st.button("Step 3: Generate Song from these Lyrics"):
+        with st.spinner("Creating AI Voice and Melody..."):
+            # A. Convert refined lyrics to gTTS voice
+            tts = gTTS(text=lyrics, lang='en')
+            tts_buf = io.BytesIO()
+            tts.write_to_fp(tts_buf)
+            tts_buf.seek(0)
+            
+            # B. Convert that AI voice into a Song
+            music, sr_out = synthesize_melody(tts_buf, vol_boost, wave_style)
+            
+            if music is not None:
+                final_buf = io.BytesIO()
+                sf.write(final_buf, music, sr_out, format='WAV')
+                final_buf.seek(0)
                 
-                st.write("Voice Preview:")
-                st.audio(tts_buf)
+                st.divider()
+                st.subheader("🎉 Final Song Result")
+                st.audio(final_buf)
+                st.download_button("Download Song", final_buf, "my_ai_lyrics_song.wav")
+            else:
+                st.error("Melody generation failed. Try adding more words.")
 
-            with st.spinner("Converting voice to music..."):
-                music, sr = synthesize_music(tts_buf, vol_boost, synth_style)
-                if music is not None:
-                    final_buf = io.BytesIO()
-                    sf.write(final_buf, music, sr, format='WAV')
-                    st.subheader("Final Result")
-                    st.audio(final_buf)
-                    st.download_button("Download Text Song", final_buf, "text_song.wav")
+# UPLOAD OPTION (Alternative)
+st.divider()
+st.subheader("OR Upload a file instead")
+uploaded_file = st.file_uploader("Upload .wav or .mp3", type=["wav", "mp3"])
+if uploaded_file:
+    if st.button("Convert Uploaded File to Song"):
+        res_music, res_sr = synthesize_melody(uploaded_file, vol_boost, wave_style)
+        if res_music is not None:
+            res_buf = io.BytesIO()
+            sf.write(res_buf, res_music, res_sr, format='WAV')
+            st.audio(res_buf)
