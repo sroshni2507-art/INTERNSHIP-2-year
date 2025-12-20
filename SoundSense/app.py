@@ -1,146 +1,97 @@
 import streamlit as st
 import librosa
-import librosa.display
 import numpy as np
 import soundfile as sf
-import matplotlib.pyplot as plt
 import io
-import speech_recognition as sr
-from gtts import gTTS
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="SoundSense Pro", layout="wide", page_icon="🎧")
-st.title("🎧 SoundSense – AI Music & Voice App")
+# App Configuration
+st.set_page_config(page_title="AI Voice Songwriter", layout="wide", page_icon="🎤")
+st.title("🎤 AI Live Voice-to-Song")
+st.write("Speak or hum into the microphone, and this AI will turn your voice into a musical melody with a beat.")
 
-# ---------------- SIDEBAR ----------------
-choice = st.sidebar.selectbox(
-    "Select Module",
-    [
-        "Voice ➔ Lyrics ➔ Song",
-        "Voice ➔ Music (Direct)",
-        "Music Visualizer",
-        "Sound Alerts"
-    ]
-)
+# --- SIDEBAR SETTINGS ---
+st.sidebar.header("Musical Controls")
+vol_boost = st.sidebar.slider("Volume Boost", 1.0, 10.0, 4.0)
+instrument = st.sidebar.selectbox("Instrument Style", ["Synthesizer", "Electronic Lead", "Clean Sine"])
+add_drums = st.sidebar.checkbox("Add Background Beat", value=True)
 
-# Sidebar Settings for Audio Quality
-st.sidebar.divider()
-st.sidebar.header("🔊 Song Settings")
-vol_boost = st.sidebar.slider("Volume Boost", 1.0, 10.0, 5.0)
-wave_style = st.sidebar.selectbox("Synth Style", ["Square (Loud)", "Sine (Soft)", "Triangle"])
+# Helper Function: Snaps voice pitch to the nearest musical note (Auto-tune)
+def auto_tune(f0):
+    if f0 <= 0: return 0
+    # Frequencies for C Major Scale (Hz)
+    c_major_hz = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]
+    return min(c_major_hz, key=lambda x: abs(x - f0))
 
-# ---------------- HELPER FUNCTIONS ----------------
-
-def synthesize_musical_song(audio_input, boost=5.0, style="Square (Loud)"):
-    """Advanced synthesis: Corrects duration, pitch, and adds volume envelope."""
-    y, sample_rate = librosa.load(audio_input, sr=None)
+# Core Engine: Converts Voice to Song
+def convert_voice_to_song(audio_data, boost, style):
+    # Load the recorded audio
+    y, sr = librosa.load(audio_data, sr=None)
+    
+    # 1. Extract Pitch (f0) and Volume (RMS)
     hop_length = 512
-    # Pitch extraction
-    f0, _, _ = librosa.pyin(y, fmin=80, fmax=800, sr=sample_rate)
-    f0_cleaned = np.nan_to_num(f0)
+    f0, voiced_flag, voiced_probs = librosa.pyin(y, fmin=80, fmax=800, sr=sr)
     
-    # Extract Volume Envelope (To prevent constant buzzing)
+    # Volume envelope (So the music stops when you stop talking)
     rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
-    rms = np.interp(np.arange(len(f0_cleaned)), np.arange(len(rms)), rms)
-    rms = rms / (np.max(rms) + 1e-6)
+    rms = np.interp(np.arange(len(f0)), np.arange(len(rms)), rms)
+    rms = rms / (np.max(rms) + 1e-6) # Normalize
 
-    # Upsample to match original length
-    total_samples = len(f0_cleaned) * hop_length
-    f0_up = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), f0_cleaned)
-    rms_up = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), rms)
+    # 2. Apply Auto-tune
+    f0_tuned = np.array([auto_tune(f) for f in f0])
+    
+    # 3. Match length (Upsampling)
+    total_samples = len(f0) * hop_length
+    f0_final = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), f0_tuned)
+    rms_final = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), rms)
 
-    # Generate Audio
-    phase = 2 * np.pi * np.cumsum(f0_up) / sample_rate
-    if style == "Square (Loud)":
-        music = np.sign(np.sin(phase))
-    elif style == "Sine (Soft)":
-        music = np.sin(phase)
+    # 4. Synthesize Waveform
+    phase = 2 * np.pi * np.cumsum(f0_final) / sr
+    
+    if style == "Synthesizer":
+        # Mix Sine and Square for a rich synth sound
+        music = 0.6 * np.sin(phase) + 0.3 * np.sign(np.sin(phase))
+    elif style == "Electronic Lead":
+        music = np.sign(np.sin(phase)) # Pure Square wave
     else:
-        music = 2 * np.abs(2 * (phase / (2 * np.pi) - np.floor(phase / (2 * np.pi) + 0.5))) - 1
+        music = np.sin(phase) # Pure Sine wave
 
-    # Apply Volume Envelope & Boost
-    music = music * rms_up * boost
-    music = np.clip(music, -1.0, 1.0)
-    return music, sample_rate
+    # Apply Volume Envelope and Gain
+    music = music * rms_final * boost
+    music = np.clip(music, -1.0, 1.0) 
 
-def stt_convert(audio_file):
-    """Converts recorded audio to text using SpeechRecognition."""
-    r = sr.Recognizer()
-    # Read the audio file from the Streamlit UploadedFile/AudioBuffer
-    with sr.AudioFile(audio_file) as source:
-        audio_data = r.record(source)
-    try:
-        return r.recognize_google(audio_data)
-    except Exception as e:
-        return f"Error: {str(e)}. Please speak clearly."
+    # 5. Add a simple Background Beat (Drum kick)
+    if add_drums:
+        tempo_hz = 2.0  # 120 BPM
+        t = np.arange(total_samples) / sr
+        kick = np.sin(2 * np.pi * 60 * t) * np.exp(-12 * (t % (1/tempo_hz)))
+        music = (0.7 * music) + (0.3 * kick)
 
-# ---------------- MODULES ----------------
+    return music, sr
 
-# 1. Voice ➔ Lyrics ➔ Song
-if choice == "Voice ➔ Lyrics ➔ Song":
-    st.header("🎤 Voice to Lyrics to Song")
-    st.write("Step 1: Record ➔ Step 2: Edit Text ➔ Step 3: Generate Song")
-    
-    rec_voice = st.audio_input("Record your speech")
-    if rec_voice:
-        if 'lyrics' not in st.session_state:
-            with st.spinner("Converting speech to text..."):
-                st.session_state.lyrics = stt_convert(rec_voice)
-        
-        edited_lyrics = st.text_area("Edit your Lyrics/Text here:", st.session_state.lyrics)
-        
-        if st.button("Generate Final Song"):
-            with st.spinner("Generating AI Voice & Melody..."):
-                # Convert text back to AI voice
-                tts = gTTS(text=edited_lyrics, lang='en')
-                t_buf = io.BytesIO()
-                tts.write_to_fp(t_buf)
-                t_buf.seek(0)
+# --- USER INTERFACE ---
+st.subheader("Step 1: Record your voice")
+user_voice = st.audio_input("Click to Record")
+
+if user_voice:
+    st.write("Voice Recording Found!")
+    if st.button("✨ Convert My Voice into a Song"):
+        with st.spinner("Processing pitch and applying Auto-tune..."):
+            song, sr_out = convert_voice_to_song(user_voice, vol_boost, instrument)
+            
+            if song is not None:
+                # Save to memory buffer
+                out_buffer = io.BytesIO()
+                sf.write(out_buffer, song, sr_out, format='WAV')
+                out_buffer.seek(0)
                 
-                # Convert AI voice to loud song
-                music, sr_out = synthesize_musical_song(t_buf, vol_boost, wave_style)
-                if music is not None:
-                    res_buf = io.BytesIO()
-                    sf.write(res_buf, music, sr_out, format='WAV')
-                    st.success("Song Generated!")
-                    st.audio(res_buf)
-                    st.download_button("Download Song", res_buf, "ai_lyrics_song.wav")
-
-# 2. Voice ➔ Music (Direct Upload)
-elif choice == "Voice ➔ Music (Direct)":
-    st.header("🎤 Direct Voice to Music")
-    audio_file = st.file_uploader("Upload your voice (.wav/.mp3)", type=["wav","mp3"])
-    
-    if audio_file:
-        st.audio(audio_file)
-        if st.button("Generate Music"):
-            with st.spinner("Processing..."):
-                music, sr_out = synthesize_musical_song(audio_file, vol_boost, wave_style)
-                out_buf = io.BytesIO()
-                sf.write(out_buf, music, sr_out, format='WAV')
-                st.audio(out_buf)
-
-# 3. Music Visualizer
-elif choice == "Music Visualizer":
-    st.header("🎶 Music Visualization")
-    music_file = st.file_uploader("Upload Music (.wav/.mp3)", type=["wav","mp3"])
-    if music_file:
-        y, sr = librosa.load(music_file)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        st.metric("Tempo (BPM)", round(float(tempo), 2))
-        fig, ax = plt.subplots()
-        librosa.display.waveshow(y, sr=sr, ax=ax)
-        st.pyplot(fig)
-        energy = np.mean(librosa.feature.rms(y=y))
-        st.write("Emotion:", "Energetic 🔥" if tempo > 120 else "Calm 😊")
-
-# 4. Sound Alerts
-elif choice == "Sound Alerts":
-    st.header("🚨 Sound Event Alerts")
-    sound_file = st.file_uploader("Upload Sound", type=["wav","mp3"])
-    if sound_file:
-        y, sr = librosa.load(sound_file)
-        rms = np.mean(librosa.feature.rms(y=y))
-        if rms > 0.05: st.error("⚠️ Loud Sound Detected!")
-        spec_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
-        st.write("Type:", "Horn 🚗" if spec_centroid > 3000 else "Door Knock 🚪")
+                st.divider()
+                st.subheader("Step 2: Listen to your AI Song")
+                st.audio(out_buffer)
+                st.download_button(
+                    label="Download Your Song",
+                    data=out_buffer,
+                    file_name="my_ai_voice_song.wav",
+                    mime="audio/wav"
+                )
+            else:
+                st.error("The recording was too quiet. Please try again.")
