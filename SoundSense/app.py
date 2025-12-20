@@ -7,22 +7,18 @@ import matplotlib.pyplot as plt
 import io
 import speech_recognition as sr
 from gtts import gTTS
-from moviepy.editor import VideoFileClip
-import whisper
-from transformers import pipeline
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="SoundSense Pro", layout="wide", page_icon="🎧")
-st.title("🎧 SoundSense – Inclusive AI Music & Movie App")
+st.title("🎧 SoundSense – AI Music & Voice App")
 
 # ---------------- SIDEBAR ----------------
 choice = st.sidebar.selectbox(
     "Select Module",
     [
-        "Voice ➔ Lyrics ➔ Song (New!)",
+        "Voice ➔ Lyrics ➔ Song",
         "Voice ➔ Music (Direct)",
         "Music Visualizer",
-        "Movie ➔ Subtitles",
         "Sound Alerts"
     ]
 )
@@ -48,7 +44,7 @@ def synthesize_musical_song(audio_input, boost=5.0, style="Square (Loud)"):
     rms = np.interp(np.arange(len(f0_cleaned)), np.arange(len(rms)), rms)
     rms = rms / (np.max(rms) + 1e-6)
 
-    # Upsample
+    # Upsample to match original length
     total_samples = len(f0_cleaned) * hop_length
     f0_up = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), f0_cleaned)
     rms_up = np.interp(np.arange(total_samples), np.arange(0, total_samples, hop_length), rms)
@@ -67,22 +63,23 @@ def synthesize_musical_song(audio_input, boost=5.0, style="Square (Loud)"):
     music = np.clip(music, -1.0, 1.0)
     return music, sample_rate
 
-def stt_convert(audio_bytes):
-    """Converts Audio bytes to Text."""
+def stt_convert(audio_file):
+    """Converts recorded audio to text using SpeechRecognition."""
     r = sr.Recognizer()
-    with sr.AudioFile(io.BytesIO(audio_bytes.read())) as source:
-        audio = r.record(source)
+    # Read the audio file from the Streamlit UploadedFile/AudioBuffer
+    with sr.AudioFile(audio_file) as source:
+        audio_data = r.record(source)
     try:
-        return r.recognize_google(audio)
-    except:
-        return "Could not understand audio."
+        return r.recognize_google(audio_data)
+    except Exception as e:
+        return f"Error: {str(e)}. Please speak clearly."
 
 # ---------------- MODULES ----------------
 
-# 1. NEW: Voice ➔ Lyrics ➔ Song
-if choice == "Voice ➔ Lyrics ➔ Song (New!)":
+# 1. Voice ➔ Lyrics ➔ Song
+if choice == "Voice ➔ Lyrics ➔ Song":
     st.header("🎤 Voice to Lyrics to Song")
-    st.write("Record your voice ➔ Edit the text into lyrics ➔ Create a song!")
+    st.write("Step 1: Record ➔ Step 2: Edit Text ➔ Step 3: Generate Song")
     
     rec_voice = st.audio_input("Record your speech")
     if rec_voice:
@@ -90,23 +87,26 @@ if choice == "Voice ➔ Lyrics ➔ Song (New!)":
             with st.spinner("Converting speech to text..."):
                 st.session_state.lyrics = stt_convert(rec_voice)
         
-        edited_lyrics = st.text_area("Refine your Lyrics:", st.session_state.lyrics)
+        edited_lyrics = st.text_area("Edit your Lyrics/Text here:", st.session_state.lyrics)
         
         if st.button("Generate Final Song"):
             with st.spinner("Generating AI Voice & Melody..."):
+                # Convert text back to AI voice
                 tts = gTTS(text=edited_lyrics, lang='en')
                 t_buf = io.BytesIO()
                 tts.write_to_fp(t_buf)
                 t_buf.seek(0)
                 
-                music, sr_out = synthesize_music = synthesize_musical_song(t_buf, vol_boost, wave_style)
+                # Convert AI voice to loud song
+                music, sr_out = synthesize_musical_song(t_buf, vol_boost, wave_style)
                 if music is not None:
                     res_buf = io.BytesIO()
                     sf.write(res_buf, music, sr_out, format='WAV')
+                    st.success("Song Generated!")
                     st.audio(res_buf)
                     st.download_button("Download Song", res_buf, "ai_lyrics_song.wav")
 
-# 2. Voice ➔ Music (Original Refined)
+# 2. Voice ➔ Music (Direct Upload)
 elif choice == "Voice ➔ Music (Direct)":
     st.header("🎤 Direct Voice to Music")
     audio_file = st.file_uploader("Upload your voice (.wav/.mp3)", type=["wav","mp3"])
@@ -134,25 +134,7 @@ elif choice == "Music Visualizer":
         energy = np.mean(librosa.feature.rms(y=y))
         st.write("Emotion:", "Energetic 🔥" if tempo > 120 else "Calm 😊")
 
-# 4. Movie Subtitles
-elif choice == "Movie ➔ Subtitles":
-    st.header("🎬 Movie → Subtitles + Emotion")
-    video_file = st.file_uploader("Upload Movie (.mp4)", type=["mp4"])
-    if video_file:
-        with open("temp_vid.mp4","wb") as f: f.write(video_file.read())
-        clip = VideoFileClip("temp_vid.mp4")
-        clip.audio.write_audiofile("temp_aud.wav")
-        
-        st.info("🎙 Transcribing (Whisper)...")
-        model = whisper.load_model("base")
-        result = model.transcribe("temp_aud.wav")
-        
-        emo = pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base")
-        for seg in result["segments"][:5]:
-            label = emo(seg["text"])[0]["label"]
-            st.write(f"⏱ {seg['start']:.2f}s | **{label}**: {seg['text']}")
-
-# 5. Sound Alerts
+# 4. Sound Alerts
 elif choice == "Sound Alerts":
     st.header("🚨 Sound Event Alerts")
     sound_file = st.file_uploader("Upload Sound", type=["wav","mp3"])
