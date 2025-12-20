@@ -3,4 +3,8 @@ librosa
 numpy
 soundfile
 matplotlib
+moviepy
+openai-whisper
+transformers
+torch
 gTTS
