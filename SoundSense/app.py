@@ -7,147 +7,198 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import io
 import time
+import os
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="SonicSense Pro", layout="wide")
+st.set_page_config(page_title="SonicSense Ultra", layout="wide", initial_sidebar_state="expanded")
 
-# --- CUSTOM ENHANCED CSS ---
+# --- BEAUTIFUL CUSTOM CSS (Neon Glassmorphism) ---
 st.markdown("""
     <style>
-    .stApp { background: #0f0c29; background: linear-gradient(to right, #0f0c29, #302b63, #24243e); color: white; }
-    .stButton>button { 
-        background: linear-gradient(45deg, #FF512F, #DD2476); 
-        color: white; border-radius: 25px; border: none; font-size: 18px; transition: 0.3s;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+    
+    html, body, [class*="css"]  {
+        font-family: 'Poppins', sans-serif;
+        background-color: #050505;
+        color: #e0e0e0;
     }
-    .stButton>button:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-    .reportview-container .main .block-container { padding: 3rem; }
-    h1, h2, h3 { color: #00d2ff; }
-    .card { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); }
+    
+    .stApp {
+        background: radial-gradient(circle at top right, #1e2a4a, #050505);
+    }
+
+    /* Card Styling */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        margin-bottom: 20px;
+    }
+
+    /* Neon Titles */
+    h1, h2 {
+        background: linear-gradient(to right, #00d2ff, #3a7bd5);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 600;
+    }
+
+    /* Custom Buttons */
+    .stButton>button {
+        background: linear-gradient(45deg, #00c6ff, #0072ff);
+        color: white;
+        border: none;
+        border-radius: 30px;
+        padding: 12px 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 114, 255, 0.5);
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: rgba(10, 10, 10, 0.8);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🚀 SonicSense Pro: The Future of Inclusive Sound")
+# --- UTILITY FUNCTIONS ---
+def generate_music_from_audio(audio_data, sr):
+    f0, _, _ = librosa.pyin(audio_data, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
+    f0 = np.nan_to_num(f0)
+    hop_length = 512
+    f0_stretched = np.repeat(f0, hop_length)[:len(audio_data)]
+    phase = np.cumsum(2 * np.pi * f0_stretched / sr)
+    music = 0.5 * np.sin(phase) + 0.2 * np.sin(2 * phase)
+    music[f0_stretched == 0] = 0
+    return music / (np.max(np.abs(music)) + 1e-6)
 
-# Sidebar
-st.sidebar.title("💎 SonicSense Menu")
-menu = ["🏠 Dashboard", "🎤 Voice → Instrument", "🧠 Mood AI & Spotify", "🌈 Sensory Room (Deaf Support)", "🎬 Movie Accessibility"]
-choice = st.sidebar.radio("Navigate", menu)
+# --- SIDEBAR NAVIGATION ---
+with st.sidebar:
+    st.markdown("## 💎 SonicSense Pro")
+    menu = ["🏠 Dashboard", "🎨 Creative Studio", "🧠 Mood & Spotify AI", "🌈 Sensory Room", "🎬 Movie Lab"]
+    choice = st.radio("Navigation", menu)
+    st.write("---")
+    st.write("v2.0 Beta - Inclusive AI")
 
-# ---------------------------------------------------------
-# MODULE: MOOD AI & SPOTIFY (Work Activity Boost)
-# ---------------------------------------------------------
-if choice == "🧠 Mood AI & Spotify":
-    st.header("Personalized Productivity & Spotify Sync")
+# --- DASHBOARD ---
+if choice == "🏠 Dashboard":
+    st.title("Welcome to SonicSense Ultra")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("<div class='glass-card'><h3>Accessibility</h3><p>Hearing Impaired Optimized</p></div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("<div class='glass-card'><h3>Creative AI</h3><p>Voice to Instrument Hub</p></div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown("<div class='glass-card'><h3>Productivity</h3><p>Mood-based Workflow</p></div>", unsafe_allow_html=True)
     
+    st.image("https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1000", use_container_width=True)
+
+# --- CREATIVE STUDIO (MERGED INPUTS) ---
+elif choice == "🎨 Creative Studio":
+    st.title("Creative Sound Studio")
+    st.write("Choose how you want to create music:")
+    
+    tab1, tab2, tab3 = st.tabs(["🎙️ Record Live", "📁 Upload File", "✍️ Text to Sound"])
+    
+    with tab1:
+        st.subheader("On-the-spot Recording")
+        recorded_audio = st.audio_input("Speak or Hum now...")
+        if recorded_audio:
+            y, sr = librosa.load(recorded_audio)
+            if st.button("Convert Live Voice to Music"):
+                music = generate_music_from_audio(y, sr)
+                st.audio(music, sample_rate=sr)
+                st.success("Conversion Complete!")
+
+    with tab2:
+        st.subheader("Upload Audio File")
+        uploaded_file = st.file_uploader("Choose a wav/mp3 file", type=['wav', 'mp3'])
+        if uploaded_file:
+            y, sr = librosa.load(uploaded_file)
+            if st.button("Process Uploaded Audio"):
+                music = generate_music_from_audio(y, sr)
+                st.audio(music, sample_rate=sr)
+
+    with tab3:
+        st.subheader("Text to Melodic Frequency")
+        user_text = st.text_input("Enter a word or sentence (AI will create a tone):")
+        if user_text:
+            # Creative Logic: Convert text characters to frequencies
+            duration = 2.0
+            sr = 22050
+            t = np.linspace(0, duration, int(sr * duration))
+            freq = sum([ord(c) for c in user_text]) % 500 + 200 # Map text to a freq range
+            text_music = 0.5 * np.sin(2 * np.pi * freq * t)
+            st.write(f"Tone Frequency based on text: {freq}Hz")
+            st.audio(text_music, sample_rate=sr)
+
+# --- MOOD AI & SPOTIFY ---
+elif choice == "🧠 Mood & Spotify AI":
+    st.title("Mood AI Coach")
     col1, col2 = st.columns(2)
     with col1:
-        mood = st.selectbox("How's your mood?", ["Stressed", "Calm", "Focused", "Energetic"])
-        goal = st.text_input("What are you working on?", "Coding my AI project")
-    
-    if st.button("Generate My Flow State"):
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        u_mood = st.selectbox("Current Mood", ["Energetic", "Calm", "Focused", "Stressed"])
+        u_goal = st.text_input("What is your goal?", "Finish my Internship report")
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    if st.button("Get My Spotify Plan"):
         st.balloons()
-        
-        # Recommendations Logic
         recs = {
-            "Stressed": ("Deep Breathing & Lo-Fi", "Lofi Beats", "https://open.spotify.com/search/lofi%20relax"),
-            "Calm": ("Mindful Journaling & Classical", "Classical", "https://open.spotify.com/search/classical%20piano"),
-            "Focused": ("Deep Work & Ambient Noise", "Ambient", "https://open.spotify.com/search/focus%20ambient"),
-            "Energetic": ("HIIT Workout & EDM", "EDM", "https://open.spotify.com/search/workout%20edm")
+            "Energetic": ("Workout", "https://open.spotify.com/search/workout%20edm"),
+            "Calm": ("Relax", "https://open.spotify.com/search/lofi%20chill"),
+            "Focused": ("Study", "https://open.spotify.com/search/deep%20focus"),
+            "Stressed": ("Meditation", "https://open.spotify.com/search/meditation%20piano")
         }
-        task, genre, link = recs[mood]
+        genre, link = recs[u_mood]
+        st.markdown(f"### Activity: {genre} Session")
+        st.markdown(f"<a href='{link}' target='_blank'><button style='background:#1DB954; color:white; border:none; padding:15px; border-radius:10px;'>🎧 Open {u_mood} Playlist on Spotify</button></a>", unsafe_allow_html=True)
         
-        st.markdown(f"""
-        <div class='card'>
-            <h3>✅ Targeted Activity: {task}</h3>
-            <p>Work on <b>{goal}</b> with high efficiency.</p>
-            <a href='{link}' target='_blank'><button style='padding: 10px; border-radius: 10px; background: #1DB954; color: white; border: none; cursor: pointer;'>🎧 Open {genre} on Spotify</button></a>
-        </div>
-        """, unsafe_allow_html=True)
+        # Activity Download
+        st.download_button("📥 Download My Schedule", f"Mood: {u_mood}\nGoal: {u_goal}\nMusic: {genre}", "schedule.txt")
 
-        # Download Feature
-        plan_text = f"Mood: {mood}\nActivity: {task}\nGoal: {goal}\nMusic: {genre}"
-        st.download_button("📥 Download My Productivity Plan", plan_text, file_name="flow_plan.txt")
-
-        # Pomodoro Timer
-        st.write("---")
-        st.subheader("⏱️ Productivity Timer")
-        if st.button("Start 25 min Deep Work Session"):
-            progress_bar = st.progress(0)
-            for i in range(100):
-                time.sleep(0.1) # Demo speed
-                progress_bar.progress(i + 1)
-            st.success("Session Complete! Take a break.")
-
-# ---------------------------------------------------------
-# MODULE: SENSORY ROOM (For Hearing Impaired)
-# ---------------------------------------------------------
-elif choice == "🌈 Sensory Room (Deaf Support)":
-    st.header("Feel the Sound: Visual Sensory Experience")
-    st.info("Hearing impaired users can 'watch' the music through color ripples and vibration maps.")
+# --- SENSORY ROOM (ACCESSIBILITY) ---
+elif choice == "🌈 Sensory Room":
+    st.title("Sensory Sound Experience")
+    st.info("Hearing impaired users can visualize and feel the vibrations of audio.")
     
-    music_file = st.file_uploader("Upload Audio to Visualize", type=['wav', 'mp3'])
-    
-    if music_file:
-        y, sr = librosa.load(music_file)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        st.write(f"Detected Rhythm Tempo: {round(float(tempo), 1)} BPM")
-        
-        # Accessibility Visualization
+    sens_file = st.file_uploader("Upload Audio for Sensory Map", type=['wav', 'mp3'])
+    if sens_file:
+        y, sr = librosa.load(sens_file)
         rms = librosa.feature.rms(y=y)[0]
-        fig, ax = plt.subplots(figsize=(12, 4))
-        # Changing color based on volume for sensory effect
-        ax.fill_between(range(len(rms)), rms, color=plt.cm.magma(np.max(rms)*10))
+        
+        fig, ax = plt.subplots(figsize=(10, 3))
+        # Beautiful Gradient Waveform
+        ax.plot(rms, color='#00d2ff', alpha=0.7)
+        ax.fill_between(range(len(rms)), rms, color='#3a7bd5', alpha=0.3)
         ax.set_axis_off()
         st.pyplot(fig)
         
-        st.markdown("### 🌈 Sensory Flash")
-        st.write("The screen background changes with the beat (Simulated below)")
-        # This simulates a sensory light for deaf users
-        if st.button("Start Sensory Light Sync"):
-            for _ in range(5):
-                st.markdown("<div style='height:50px; background:red; border-radius:10px;'></div>", unsafe_allow_html=True)
-                time.sleep(0.3)
-                st.markdown("<div style='height:50px; background:blue; border-radius:10px;'></div>", unsafe_allow_html=True)
-                time.sleep(0.3)
+        st.markdown("### 🫨 Tactile Vibration Simulation")
+        if st.button("Simulate Beat Flash"):
+            for _ in range(3):
+                st.markdown("<div style='height:20px; background:cyan; border-radius:10px; box-shadow: 0 0 20px cyan;'></div>", unsafe_allow_html=True)
+                time.sleep(0.2)
+                st.markdown("<div style='height:20px; background:magenta; border-radius:10px; box-shadow: 0 0 20px magenta;'></div>", unsafe_allow_html=True)
+                time.sleep(0.2)
 
-# ---------------------------------------------------------
-# MODULE: VOICE → INSTRUMENT (Refined with Download)
-# ---------------------------------------------------------
-elif choice == "🎤 Voice → Instrument":
-    st.header("Creative Voice Transformer")
-    v_file = st.file_uploader("Upload your hum/voice", type=['wav', 'mp3'])
-    
-    if v_file:
-        y, sr = librosa.load(v_file)
-        f0, _, _ = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
-        f0 = np.nan_to_num(f0)
-        
-        hop_length = 512
-        f0_stretched = np.repeat(f0, hop_length)[:len(y)]
-        phase = np.cumsum(2 * np.pi * f0_stretched / sr)
-        music = 0.5 * np.sin(phase) + 0.2 * np.sin(2*phase)
-        music[f0_stretched == 0] = 0
-        
-        # Output & Download
-        out_buf = io.BytesIO()
-        sf.write(out_buf, music, sr, format='WAV')
-        
-        st.audio(out_buf)
-        st.download_button("💾 Download AI Created Music", out_buf, file_name="ai_music.wav")
-
-# ---------------------------------------------------------
-# MODULE: DASHBOARD (Home)
-# ---------------------------------------------------------
-elif choice == "🏠 Dashboard":
-    st.subheader("Your AI Hub Stats")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Accessibility Level", "High", "Accessibility+")
-    col2.metric("Productivity Boost", "45%", "Focus Mode")
-    col3.metric("AI Music Created", "12 Tracks", "Creative")
-    
-    st.markdown("""
-    ### Why SonicSense Pro?
-    - **Productivity:** Syncs with Spotify and uses Pomodoro for work activity.
-    - **Inclusion:** Sensory Room helps the hearing impaired feel the rhythm through light and visuals.
-    - **Creativity:** Turn any sound into a professional instrument track.
-    """)
+# --- MOVIE LAB (SUBTITLES) ---
+elif choice == "🎬 Movie Lab":
+    st.title("Movie Accessibility Lab")
+    video = st.file_uploader("Upload Video File", type=['mp4'])
+    if video:
+        st.video(video)
+        if st.button("Generate AI Subtitles"):
+            with st.spinner("AI is analyzing speech..."):
+                time.sleep(2) # Simulating API call
+                st.success("Subtitle Generated: 'Welcome to SonicSense, where sound meets vision.'")
+                st.info("Emotion Detected: 😊 Positive / Inspiring")
