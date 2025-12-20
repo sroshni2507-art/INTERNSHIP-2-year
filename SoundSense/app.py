@@ -5,24 +5,23 @@ import soundfile as sf
 import io
 from gtts import gTTS
 
-# Page Configuration
-st.set_page_config(page_title="SoundSense AI", layout="wide", page_icon="🎵")
+# App Branding
+st.set_page_config(page_title="SoundSense AI Pro", layout="wide", page_icon="🎵")
+st.title("🎵 SoundSense: All-in-One AI Song Generator")
+st.write("Convert your Live Voice, Uploaded Files, or Text into synthesized music.")
 
-st.title("🎵 SoundSense: Live Voice & Text to Song")
-st.write("Record your own voice or type text to convert it into a synthesized melody.")
-
-# -------- SIDEBAR SETTINGS (For Loudness & Style) --------
-st.sidebar.header("🔊 Audio Customization")
-vol_boost = st.sidebar.slider("Volume Gain", 1.0, 10.0, 3.0)
-wave_type = st.sidebar.selectbox(
+# -------- SIDEBAR: CUSTOMIZATION --------
+st.sidebar.header("🔊 Audio & Volume Settings")
+vol_boost = st.sidebar.slider("Volume Level (Boost)", 1.0, 10.0, 4.0)
+synth_style = st.sidebar.selectbox(
     "Synthesizer Style", 
-    ["Square (Loudest/EDM)", "Sine (Soft/Flute)", "Triangle (Vintage)"]
+    ["Square (Loud/Electronic)", "Sine (Soft/Whistle)", "Triangle (Smooth)"]
 )
 
-# Core Logic: Function to convert Audio into a Melody
-def process_to_melody(input_audio, boost=3.0, synth_style="Sine (Soft/Flute)"):
-    # Load audio from the provided buffer
-    y, sr = librosa.load(input_audio, sr=None)
+# -------- CORE ENGINE: VOICE TO MUSIC --------
+def synthesize_music(audio_input, boost=4.0, style="Square (Loud/Electronic)"):
+    # Load audio
+    y, sr = librosa.load(audio_input, sr=None)
     
     # 1. Extract Pitch (f0)
     hop_length = 512
@@ -34,7 +33,7 @@ def process_to_melody(input_audio, boost=3.0, synth_style="Sine (Soft/Flute)"):
     if np.max(f0_cleaned) == 0:
         return None, None
 
-    # 2. Fix Duration (Stretch frames to match original sample count)
+    # 2. Fix Duration (Match frames to samples)
     total_samples = len(f0_cleaned) * hop_length
     f0_upsampled = np.interp(
         np.arange(total_samples), 
@@ -42,71 +41,82 @@ def process_to_melody(input_audio, boost=3.0, synth_style="Sine (Soft/Flute)"):
         f0_cleaned
     )
 
-    # 3. Create Smooth Waveform using Phase Integration
+    # 3. Create Waveform
     phase = 2 * np.pi * np.cumsum(f0_upsampled) / sr
     
-    if synth_style == "Square (Loudest/EDM)":
-        music = np.sign(np.sin(phase)) # Square wave is naturally very loud
-    elif synth_style == "Sine (Soft/Flute)":
+    if style == "Square (Loud/Electronic)":
+        music = np.sign(np.sin(phase)) # Very loud energy
+    elif style == "Sine (Soft/Whistle)":
         music = np.sin(phase)
     else: # Triangle
         music = 2 * np.abs(2 * (phase / (2 * np.pi) - np.floor(phase / (2 * np.pi) + 0.5))) - 1
 
-    # 4. Apply Volume Boost and Prevent Distortion
+    # 4. Boost Volume & Prevent Distortion
     music = music * boost
-    music = np.clip(music, -1.0, 1.0) # Clipping prevents "crackling"
+    music = np.clip(music, -1.0, 1.0) 
     
     return music, sr
 
-# -------- APP INTERFACE (Tabs) --------
-tab1, tab2 = st.tabs(["🎤 Live Recording", "📝 Text-to-Song"])
+# -------- USER INTERFACE TABS --------
+tab1, tab2, tab3 = st.tabs(["🎤 Live Recording", "📤 Upload Audio", "📝 Text to Song"])
 
-# TAB 1: LIVE VOICE RECORDING
+# TAB 1: LIVE RECORDING
 with tab1:
-    st.subheader("Record Your Voice")
-    st.info("Click the microphone icon below to record yourself humming or singing.")
+    st.subheader("Record Live Voice")
+    recorded_audio = st.audio_input("Click the mic to record")
     
-    # Streamlit's native audio recording component
-    recorded_file = st.audio_input("Start Recording")
-    
-    if recorded_file:
-        if st.button("Generate Song from Recording"):
-            with st.spinner("Analyzing your voice..."):
-                music, sr = process_to_melody(recorded_file, vol_boost, wave_type)
+    if recorded_audio:
+        if st.button("Convert Recording to Song"):
+            with st.spinner("Generating melody..."):
+                music, sr = synthesize_music(recorded_audio, vol_boost, synth_style)
                 if music is not None:
-                    buffer = io.BytesIO()
-                    sf.write(buffer, music, sr, format='WAV')
-                    st.success("Successfully generated!")
-                    st.audio(buffer)
-                    st.download_button("Download Song", buffer, "live_song.wav")
+                    buf = io.BytesIO()
+                    sf.write(buf, music, sr, format='WAV')
+                    st.audio(buf)
+                    st.download_button("Download Song", buf, "live_record_song.wav")
                 else:
-                    st.error("Could not detect a clear melody. Please try again more loudly.")
+                    st.error("Could not detect pitch. Try singing more clearly.")
 
-# TAB 2: TEXT TO SONG
+# TAB 2: UPLOAD OPTION
 with tab2:
-    st.subheader("Text to Melodic Speech")
-    text_input = st.text_input("Enter text to convert into a song:", "Hello, this is my AI generated song.")
+    st.subheader("Upload Audio File")
+    uploaded_file = st.file_uploader("Choose a .wav or .mp3 file", type=["wav", "mp3"])
     
-    if st.button("Generate Song from Text"):
-        if text_input:
+    if uploaded_file:
+        st.audio(uploaded_file)
+        if st.button("Convert Upload to Song"):
+            with st.spinner("Processing file..."):
+                music, sr = synthesize_music(uploaded_file, vol_boost, synth_style)
+                if music is not None:
+                    buf = io.BytesIO()
+                    sf.write(buf, music, sr, format='WAV')
+                    st.audio(buf)
+                    st.download_button("Download Uploaded Song", buf, "upload_song.wav")
+                else:
+                    st.error("No clear pitch found in this file.")
+
+# TAB 3: TEXT TO SONG
+with tab3:
+    st.subheader("Convert Text to Song")
+    user_text = st.text_area("Enter your lyrics/text:", "Music is the language of the soul.")
+    
+    if st.button("Generate Music from Text"):
+        if user_text:
             with st.spinner("Converting text to speech..."):
-                # Convert Text to Voice (English)
-                tts = gTTS(text=text_input, lang='en')
+                # Use Google Text-to-Speech
+                tts = gTTS(text=user_text, lang='en')
                 tts_buf = io.BytesIO()
                 tts.write_to_fp(tts_buf)
                 tts_buf.seek(0)
                 
-                st.write("AI Voice Preview:")
+                st.write("Voice Preview:")
                 st.audio(tts_buf)
 
-            with st.spinner("Synthesizing melody..."):
-                # Convert that Voice to Music
-                music, sr = process_to_melody(tts_buf, vol_boost, wave_type)
+            with st.spinner("Converting voice to music..."):
+                music, sr = synthesize_music(tts_buf, vol_boost, synth_style)
                 if music is not None:
                     final_buf = io.BytesIO()
                     sf.write(final_buf, music, sr, format='WAV')
-                    st.subheader("Final Song Output")
+                    st.subheader("Final Result")
                     st.audio(final_buf)
-                    st.download_button("Download Text-Song", final_buf, "text_song.wav")
-                else:
-                    st.error("The voice was too flat to extract a melody.")
+                    st.download_button("Download Text Song", final_buf, "text_song.wav")
