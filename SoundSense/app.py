@@ -69,32 +69,53 @@ elif choice == "Visual Music":
             st.pyplot(fig2)
 
 # ---------------------------------------------------------
-# MODULE 3: SUBTITLE GENERATOR
+# MODULE 3: SUBTITLE GENERATOR (FIXED)
 # ---------------------------------------------------------
 elif choice == "Subtitle Generator":
     st.header("🎬 AI Subtitles")
+    st.write("Converts speech from Video/Audio into text.")
+    
     media_file = st.file_uploader("Upload Video or Audio", type=["mp4", "wav", "mp3"])
     
     if media_file:
         if st.button("Generate Subtitles"):
-            with st.spinner("Analyzing speech..."):
+            with st.spinner("AI is processing audio..."):
                 recognizer = sr.Recognizer()
-                temp_path = "temp_file"
-                with open(temp_path, "wb") as f:
+                
+                # Step 1: Save the uploaded file temporarily
+                temp_input = "temp_input_file"
+                with open(temp_input, "wb") as f:
                     f.write(media_file.getbuffer())
                 
-                # If video, extract audio
-                if media_file.name.endswith("mp4"):
-                    video = VideoFileClip(temp_path)
-                    video.audio.write_audiofile("temp_audio.wav", logger=None)
-                    audio_path = "temp_audio.wav"
-                else:
-                    audio_path = temp_path
-                
-                with sr.AudioFile(audio_path) as source:
-                    audio_data = recognizer.record(source)
-                    try:
+                try:
+                    # Step 2: Extract or Load Audio using Librosa
+                    # This ensures the audio is converted to a format SR can read
+                    if media_file.name.endswith("mp4"):
+                        video = VideoFileClip(temp_input)
+                        video.audio.write_audiofile("temp_raw_audio.wav", logger=None)
+                        video.close()
+                        audio_to_load = "temp_raw_audio.wav"
+                    else:
+                        audio_to_load = temp_input
+                    
+                    # Step 3: CONVERSION TO PCM WAV (The Fix)
+                    # We load it with librosa and save it as a standard WAV
+                    y, sr_load = librosa.load(audio_to_load, sr=16000) # 16kHz is best for Speech AI
+                    clean_wav_path = "clean_speech.wav"
+                    sf.write(clean_wav_path, y, sr_load, subtype='PCM_16')
+                    
+                    # Step 4: Run Speech Recognition
+                    with sr.AudioFile(clean_wav_path) as source:
+                        audio_data = recognizer.record(source)
                         text = recognizer.recognize_google(audio_data)
+                        st.subheader("📜 Transcript:")
                         st.success(text)
-                    except:
-                        st.error("Speech not clear enough!")
+                
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    st.info("Check if the audio has clear speaking voices.")
+                
+                # Step 5: Cleanup files
+                for f in [temp_input, "temp_raw_audio.wav", "clean_speech.wav"]:
+                    if os.path.exists(f):
+                        os.remove(f)
