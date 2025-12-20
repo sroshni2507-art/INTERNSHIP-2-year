@@ -4,26 +4,24 @@ import librosa.display
 import numpy as np
 import soundfile as sf
 import matplotlib.pyplot as plt
-from moviepy.editor import VideoFileClip
-import whisper
-from transformers import pipeline
+#from moviepy.editor import VideoFileClip  # Module3 remove
+#import whisper
+#from transformers import pipeline
 
-# ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="SoundSense", layout="wide")
-st.title("🎧 SoundSense – Inclusive AI Music & Movie App")
+st.title("🎧 SoundSense – Inclusive AI Music & Movie App (Module3 Removed)")
 
-# ---------------- SIDEBAR ----------------
+# -------- SIDEBAR --------
 choice = st.sidebar.selectbox(
     "Select Module",
     [
         "Voice → Music",
         "Music Visualizer",
-        "Movie → Subtitles",
         "Sound Alerts"
     ]
 )
 
-# ---------------- MODULE 1: Voice → Music ----------------
+# -------- MODULE 1: Voice → Music --------
 if choice == "Voice → Music":
     st.header("🎤 Voice to Music")
     audio_file = st.file_uploader("Upload your voice (.wav/.mp3)", type=["wav","mp3"])
@@ -40,7 +38,7 @@ if choice == "Voice → Music":
         st.audio("voice_music.wav")
         st.success("🎶 Music generated from your voice!")
 
-# ---------------- MODULE 2: Music Visualizer ----------------
+# -------- MODULE 2: Music Visualizer --------
 elif choice == "Music Visualizer":
     st.header("🎶 Music Visualization")
     music_file = st.file_uploader("Upload Music (.wav/.mp3)", type=["wav","mp3"])
@@ -64,32 +62,7 @@ elif choice == "Music Visualizer":
             emotion = "Calm 😊"
         st.write("Detected Music Emotion:", emotion)
 
-# ---------------- MODULE 3: Movie Subtitles ----------------
-elif choice == "Movie → Subtitles":
-    st.header("🎬 Movie → Subtitles + Emotion")
-    video_file = st.file_uploader("Upload Movie (.mp4/.mkv)", type=["mp4","mkv"])
-    
-    if video_file:
-        with open("temp_video.mp4","wb") as f:
-            f.write(video_file.read())
-
-        clip = VideoFileClip("temp_video.mp4")
-        clip.audio.write_audiofile("temp_audio.wav")
-
-        st.info("🎙 Transcribing audio...")
-        model = whisper.load_model("base")
-        result = model.transcribe("temp_audio.wav")
-
-        st.info("🎭 Detecting emotions...")
-        emo = pipeline("text-classification",
-                       model="j-hartmann/emotion-english-distilroberta-base")
-
-        for seg in result["segments"][:5]:
-            emotion_label = emo(seg["text"])[0]["label"]
-            st.write(f"⏱ {seg['start']:.2f}s | {emotion_label}")
-            st.write(seg["text"])
-
-# ---------------- MODULE 4: Sound Alerts ----------------
+# -------- MODULE 4: Sound Alerts --------
 elif choice == "Sound Alerts":
     st.header("🚨 Sound Event Alerts")
     sound_file = st.file_uploader("Upload Sound (.wav/.mp3)", type=["wav","mp3"])
