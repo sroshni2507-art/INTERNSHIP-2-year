@@ -4,6 +4,7 @@ numpy
 soundfile
 matplotlib
 moviepy
+ffmpeg-python
 openai-whisper
 transformers
 torch
