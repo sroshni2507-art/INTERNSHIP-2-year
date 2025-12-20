@@ -3,11 +3,8 @@ librosa
 numpy
 soundfile
 matplotlib
-gTTS
-SpeechRecognition
+seaborn
+scikit-learn
 moviepy
-openai-whisper
 transformers
 torch
-scipy
-seaborn
