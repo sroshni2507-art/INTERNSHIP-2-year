@@ -12,7 +12,7 @@ import os
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="SonicSense Ultra Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- NEON GLASSMORPHISM CSS (High Contrast & Creative) ---
+# --- NEON GLASSMORPHISM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
@@ -27,14 +27,13 @@ st.markdown("""
         background: radial-gradient(circle at top right, #1a1b2e, #05060a);
     }
 
-    /* Fix Text Visibility Globally */
+    /* Clear Text Visibility */
     label, p, span, .stMarkdown, div[data-testid="stMarkdownContainer"] p {
         color: #ffffff !important;
         font-weight: 600;
-        text-shadow: 1px 1px 2px black;
+        text-shadow: 1px 1px 3px black;
     }
 
-    /* Glassmorphism Card Design */
     .glass-card {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 20px;
@@ -45,7 +44,6 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
     }
 
-    /* Neon Titles */
     h1 {
         background: linear-gradient(to right, #00d2ff, #92fe9d);
         -webkit-background-clip: text;
@@ -57,11 +55,8 @@ st.markdown("""
     h2, h3 {
         color: #00d2ff !important;
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
     }
 
-    /* Buttons Style */
     .stButton>button {
         background: linear-gradient(45deg, #00d2ff, #3a7bd5);
         color: white !important;
@@ -70,15 +65,8 @@ st.markdown("""
         font-weight: 800;
         border: none;
         box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
-        transition: 0.3s;
-    }
-    
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 25px rgba(0, 210, 255, 0.8);
     }
 
-    /* Sidebar Appearance */
     section[data-testid="stSidebar"] {
         background-color: #000000;
         border-right: 1px solid #00d2ff33;
@@ -110,86 +98,93 @@ with st.sidebar:
 
 # --- 1. DASHBOARD ---
 if choice == "🏠 Dashboard":
-    st.title("Inclusive Audio Intelligence Hub")
+    st.title("Inclusive Audio AI Hub")
     st.image("https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop", use_container_width=True)
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("<div class='glass-card'><h3>Accessibility</h3><p>Real-time vibration mapping for the hearing impaired.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h3>Accessibility</h3><p>Sound vibrations for the hearing impaired.</p></div>", unsafe_allow_html=True)
     with col2:
-        st.markdown("<div class='glass-card'><h3>Creative AI</h3><p>Voice-to-Instrument synthesis using pitch tracking.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h3>AI Studio</h3><p>Voice-to-Instrument synthesis.</p></div>", unsafe_allow_html=True)
     with col3:
-        st.markdown("<div class='glass-card'><h3>Flow State</h3><p>Productivity sessions integrated with Mood AI.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h3>Productivity</h3><p>Spotify sessions for Flow State.</p></div>", unsafe_allow_html=True)
 
-# --- 2. CREATIVE STUDIO (Voice Input & Upload & Text) ---
+# --- 2. CREATIVE STUDIO ---
 elif choice == "🎨 Creative Studio":
-    st.title("AI Creative Studio")
+    st.title("Creative Sound Studio")
     st.image("https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070&auto=format&fit=crop", use_container_width=True)
     
     tab1, tab2, tab3 = st.tabs(["🎙️ RECORD LIVE", "📁 UPLOAD FILE", "✍️ TEXT TO SOUND"])
     
     with tab1:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.subheader("Live Voice Recording")
-        # --- AUDIO INPUT COMPONENT ---
-        recorded_audio = st.audio_input("Click the mic to speak")
-        
+        st.subheader("Live Recording")
+        recorded_audio = st.audio_input("Click to record your voice")
         if recorded_audio:
-            st.audio(recorded_audio) # Playback original
             y, sr_load = librosa.load(recorded_audio)
-            if st.button("✨ CONVERT TO INSTRUMENTAL"):
-                with st.spinner("AI analyzing frequency..."):
-                    music = generate_music_from_audio(y, sr_load)
-                    st.write("AI Result:")
-                    st.audio(music, sample_rate=sr_load)
-                    st.download_button("💾 Download AI Music", music.tobytes(), "ai_music.wav")
+            if st.button("✨ CONVERT VOICE TO MUSIC"):
+                music = generate_music_from_audio(y, sr_load)
+                st.audio(music, sample_rate=sr_load)
+                # Download
+                buffer = io.BytesIO()
+                sf.write(buffer, music, sr_load, format='WAV')
+                st.download_button("💾 Download AI Music", buffer, "ai_music.wav")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tab2:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Upload Audio (WAV/MP3)", type=['wav', 'mp3'])
+        uploaded_file = st.file_uploader("Upload Audio", type=['wav', 'mp3'])
         if uploaded_file:
-            st.audio(uploaded_file)
             y, sr_load = librosa.load(uploaded_file)
-            if st.button("PROCESS FILE"):
+            if st.button("PROCESS UPLOADED FILE"):
                 music = generate_music_from_audio(y, sr_load)
                 st.audio(music, sample_rate=sr_load)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tab3:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.subheader("Text Frequency Generator")
-        user_text = st.text_input("Type text to create a unique tone:")
+        st.subheader("Text to Sound Generator")
+        user_text = st.text_input("Type a message to generate a melody:")
         if user_text:
-            duration = 1.5
+            # FIXED: Duration scales with text length
+            duration = min(max(len(user_text) * 0.1, 3.0), 10.0) 
             sr_gen = 22050
             t = np.linspace(0, duration, int(sr_gen * duration))
-            freq = sum([ord(c) for c in user_text]) % 400 + 200
-            text_music = 0.5 * np.sin(2 * np.pi * freq * t)
+            
+            # Create a complex melodic tone based on text
+            freq_base = sum([ord(c) for c in user_text]) % 300 + 200
+            text_music = 0.5 * np.sin(2 * np.pi * freq_base * t) + 0.2 * np.sin(4 * np.pi * freq_base * t)
+            
+            st.write(f"Generated Melody Duration: {round(duration, 2)} seconds")
             st.audio(text_music, sample_rate=sr_gen)
+            
+            # Download
+            buffer = io.BytesIO()
+            sf.write(buffer, text_music, sr_gen, format='WAV')
+            st.download_button("💾 Download Text-Tone", buffer, "text_melody.wav")
         st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 3. MOOD & SPOTIFY AI ---
 elif choice == "🧠 Mood & Spotify AI":
-    st.title("Focus & Productivity Coach")
+    st.title("Focus & Mood Flow")
     st.image("https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=2070&auto=format&fit=crop", use_container_width=True)
     
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        u_mood = st.selectbox("Current Mood", ["Energetic", "Calm", "Focused", "Stressed"])
-        u_goal = st.text_input("Goal:", "Deep Work Session")
+        u_mood = st.selectbox("Mood", ["Energetic", "Calm", "Focused", "Stressed"])
+        u_goal = st.text_input("Goal:", "Study Session")
         st.markdown("</div>", unsafe_allow_html=True)
         
-    if st.button("SYNC SPOTIFY FLOW"):
+    if st.button("GENERATE SPOTIFY FLOW"):
         st.balloons()
-        mood_map = {"Energetic": "Workout Beats", "Calm": "Lofi Chill", "Focused": "Focus Flow", "Stressed": "Zen Piano"}
-        st.markdown(f"<div class='glass-card'><h3>Flow Target: {u_goal}</h3><p>Music Style: {mood_map[u_mood]}</p></div>", unsafe_allow_html=True)
-        st.markdown(f"<a href='https://open.spotify.com' target='_blank'><button style='background:#1DB954; color:white; border:none; padding:15px; border-radius:30px; width:100%; cursor:pointer; font-weight:800;'>🎧 OPEN SPOTIFY</button></a>", unsafe_allow_html=True)
+        mood_map = {"Energetic": "Workout", "Calm": "Lofi Chill", "Focused": "Focus Piano", "Stressed": "Zen"}
+        st.markdown(f"<div class='glass-card'><h3>Flow: {mood_map[u_mood]}</h3><p>Task: {u_goal}</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<a href='https://open.spotify.com' target='_blank'><button style='background:#1DB954; color:white; border:none; padding:15px; border-radius:30px; width:100%; cursor:pointer;'>🎧 OPEN SPOTIFY</button></a>", unsafe_allow_html=True)
 
 # --- 4. SENSORY ROOM ---
 elif choice == "🌈 Sensory Room":
-    st.title("Hearing Impaired Sensory Visualization")
+    st.title("Sensory Visualization Room")
     st.image("https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", use_container_width=True)
     
     sens_file = st.file_uploader("Upload sound to 'See' vibrations", type=['wav', 'mp3'])
@@ -206,10 +201,10 @@ elif choice == "🌈 Sensory Room":
 
 # --- 5. MOVIE LAB ---
 elif choice == "🎬 Movie Lab":
-    st.title("AI Movie Accessibility Lab")
+    st.title("Movie AI Subtitles")
     st.image("https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop", use_container_width=True)
-    video_input = st.file_uploader("Upload Movie Clip", type=['mp4'])
+    video_input = st.file_uploader("Upload Movie (MP4)", type=['mp4'])
     if video_input:
         st.video(video_input)
-        if st.button("RUN TRANSCRIPTION"):
-            st.markdown("<div class='glass-card'><h3>📜 AI Subtitles:</h3><p>'SoundSense Ultra: Innovation for an accessible future.'</p></div>", unsafe_allow_html=True)
+        if st.button("GENERATE AI SUBTITLES"):
+            st.markdown("<div class='glass-card'><h3>📜 AI Subtitles:</h3><p>'Innovation for everyone: Bridging sound and vision.'</p></div>", unsafe_allow_html=True)
