@@ -1,29 +1,40 @@
 import streamlit as st
 import librosa
-import librosa.display
 import numpy as np
 import soundfile as sf
-import matplotlib.pyplot as plt
 import io
 from gtts import gTTS
 
-# App Configuration
-st.set_page_config(page_title="SoundSense Pro", layout="wide", page_icon="🎧")
-st.title("🎧 SoundSense – AI Voice, Text & Music App")
+# Page Configuration
+st.set_page_config(page_title="SoundSense AI", layout="wide", page_icon="🎵")
 
-# Helper Function for Synthesis (To avoid repeating code)
-def synthesize_melody(y, sr):
+st.title("🎵 SoundSense: Live Voice & Text to Song")
+st.write("Record your own voice or type text to convert it into a synthesized melody.")
+
+# -------- SIDEBAR SETTINGS (For Loudness & Style) --------
+st.sidebar.header("🔊 Audio Customization")
+vol_boost = st.sidebar.slider("Volume Gain", 1.0, 10.0, 3.0)
+wave_type = st.sidebar.selectbox(
+    "Synthesizer Style", 
+    ["Square (Loudest/EDM)", "Sine (Soft/Flute)", "Triangle (Vintage)"]
+)
+
+# Core Logic: Function to convert Audio into a Melody
+def process_to_melody(input_audio, boost=3.0, synth_style="Sine (Soft/Flute)"):
+    # Load audio from the provided buffer
+    y, sr = librosa.load(input_audio, sr=None)
+    
+    # 1. Extract Pitch (f0)
     hop_length = 512
-    # 1. Pitch Extraction
     f0, voiced_flag, voiced_probs = librosa.pyin(
-        y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), sr=sr, hop_length=hop_length
+        y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), sr=sr
     )
     f0_cleaned = np.nan_to_num(f0)
     
     if np.max(f0_cleaned) == 0:
-        return None
+        return None, None
 
-    # 2. Upsample to match original length (Fixes the 0:00 duration issue)
+    # 2. Fix Duration (Stretch frames to match original sample count)
     total_samples = len(f0_cleaned) * hop_length
     f0_upsampled = np.interp(
         np.arange(total_samples), 
@@ -31,118 +42,71 @@ def synthesize_melody(y, sr):
         f0_cleaned
     )
 
-    # 3. Smooth Synthesis (Phase Integration)
+    # 3. Create Smooth Waveform using Phase Integration
     phase = 2 * np.pi * np.cumsum(f0_upsampled) / sr
-    music = np.sin(phase)
     
-    # Normalize volume
-    music = music / (np.max(np.abs(music)) + 1e-6)
-    return music
+    if synth_style == "Square (Loudest/EDM)":
+        music = np.sign(np.sin(phase)) # Square wave is naturally very loud
+    elif synth_style == "Sine (Soft/Flute)":
+        music = np.sin(phase)
+    else: # Triangle
+        music = 2 * np.abs(2 * (phase / (2 * np.pi) - np.floor(phase / (2 * np.pi) + 0.5))) - 1
 
-# -------- SIDEBAR --------
-choice = st.sidebar.selectbox(
-    "Select Module",
-    [
-        "Text → Voice → Music",
-        "Voice → Music (Upload)",
-        "Music Visualizer",
-        "Sound Alerts"
-    ]
-)
-
-# -------- MODULE 1: Text → Voice → Music --------
-if choice == "Text → Voice → Music":
-    st.header("📝 Text to Voice to Music")
-    st.write("Type something, and we will turn the spoken words into a melody!")
+    # 4. Apply Volume Boost and Prevent Distortion
+    music = music * boost
+    music = np.clip(music, -1.0, 1.0) # Clipping prevents "crackling"
     
-    user_text = st.text_area("Enter text here:", "Hello, I am becoming a song.")
+    return music, sr
+
+# -------- APP INTERFACE (Tabs) --------
+tab1, tab2 = st.tabs(["🎤 Live Recording", "📝 Text-to-Song"])
+
+# TAB 1: LIVE VOICE RECORDING
+with tab1:
+    st.subheader("Record Your Voice")
+    st.info("Click the microphone icon below to record yourself humming or singing.")
+    
+    # Streamlit's native audio recording component
+    recorded_file = st.audio_input("Start Recording")
+    
+    if recorded_file:
+        if st.button("Generate Song from Recording"):
+            with st.spinner("Analyzing your voice..."):
+                music, sr = process_to_melody(recorded_file, vol_boost, wave_type)
+                if music is not None:
+                    buffer = io.BytesIO()
+                    sf.write(buffer, music, sr, format='WAV')
+                    st.success("Successfully generated!")
+                    st.audio(buffer)
+                    st.download_button("Download Song", buffer, "live_song.wav")
+                else:
+                    st.error("Could not detect a clear melody. Please try again more loudly.")
+
+# TAB 2: TEXT TO SONG
+with tab2:
+    st.subheader("Text to Melodic Speech")
+    text_input = st.text_input("Enter text to convert into a song:", "Hello, this is my AI generated song.")
     
     if st.button("Generate Song from Text"):
-        if user_text:
+        if text_input:
             with st.spinner("Converting text to speech..."):
-                # 1. Text to Speech
-                tts = gTTS(text=user_text, lang='en')
-                tts_buffer = io.BytesIO()
-                tts.write_to_fp(tts_buffer)
-                tts_buffer.seek(0)
+                # Convert Text to Voice (English)
+                tts = gTTS(text=text_input, lang='en')
+                tts_buf = io.BytesIO()
+                tts.write_to_fp(tts_buf)
+                tts_buf.seek(0)
                 
-                # 2. Load the generated speech into librosa
-                y, sr = librosa.load(tts_buffer)
-                st.subheader("1. Generated Voice")
-                st.audio(tts_buffer)
+                st.write("AI Voice Preview:")
+                st.audio(tts_buf)
 
-            with st.spinner("Converting voice to melody..."):
-                # 3. Synthesize melody
-                music = synthesize_melody(y, sr)
-                
+            with st.spinner("Synthesizing melody..."):
+                # Convert that Voice to Music
+                music, sr = process_to_melody(tts_buf, vol_boost, wave_type)
                 if music is not None:
-                    # 4. Save to buffer
-                    out_buffer = io.BytesIO()
-                    sf.write(out_buffer, music, sr, format='WAV')
-                    out_buffer.seek(0)
-
-                    st.subheader("2. Generated Music Melody")
-                    st.audio(out_buffer)
-                    st.download_button("Download Song", out_buffer, "text_song.wav", "audio/wav")
+                    final_buf = io.BytesIO()
+                    sf.write(final_buf, music, sr, format='WAV')
+                    st.subheader("Final Song Output")
+                    st.audio(final_buf)
+                    st.download_button("Download Text-Song", final_buf, "text_song.wav")
                 else:
-                    st.error("The voice was too robotic or quiet to extract a melody.")
-
-# -------- MODULE 2: Voice → Music (Upload) --------
-elif choice == "Voice → Music (Upload)":
-    st.header("🎤 Voice to Music (Upload)")
-    audio_file = st.file_uploader("Upload your humming/singing", type=["wav","mp3"])
-    
-    if audio_file:
-        y, sr = librosa.load(audio_file)
-        st.audio(audio_file)
-        
-        if st.button("Convert to Music"):
-            music = synthesize_melody(y, sr)
-            if music is not None:
-                out_buffer = io.BytesIO()
-                sf.write(out_buffer, music, sr, format='WAV')
-                out_buffer.seek(0)
-                st.audio(out_buffer)
-                st.success("🎶 Melody generated!")
-            else:
-                st.error("No clear pitch detected.")
-
-# -------- MODULE 3: Music Visualizer --------
-elif choice == "Music Visualizer":
-    st.header("🎶 Music Visualization")
-    music_file = st.file_uploader("Upload Music", type=["wav","mp3"])
-    if music_file:
-        y, sr = librosa.load(music_file)
-        st.audio(music_file)
-        
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        energy = np.mean(librosa.feature.rms(y=y))
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Tempo", f"{int(tempo)} BPM")
-            fig, ax = plt.subplots()
-            librosa.display.waveshow(y, sr=sr, ax=ax)
-            st.pyplot(fig)
-        with col2:
-            emotion = "Energetic 🔥" if tempo > 120 else "Calm 😊"
-            st.subheader(f"Mood: {emotion}")
-
-# -------- MODULE 4: Sound Alerts --------
-elif choice == "Sound Alerts":
-    st.header("🚨 Sound Event Alerts")
-    sound_file = st.file_uploader("Upload Sound", type=["wav","mp3"])
-    if sound_file:
-        y, sr = librosa.load(sound_file)
-        rms = np.mean(librosa.feature.rms(y=y))
-        spec_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
-        
-        if rms > 0.05:
-            st.error("⚠️ Loud Sound Detected!")
-        
-        if spec_centroid < 1500:
-            st.write("Detected Type: Door Knock 🚪")
-        elif spec_centroid > 3000:
-            st.write("Detected Type: Horn/Alarm 🚗")
-        else:
-            st.write("Detected Type: Explosion/Thump 💥")
+                    st.error("The voice was too flat to extract a melody.")
