@@ -15,26 +15,37 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. SESSION STATE INITIALIZATION ---
+# --- 2. SESSION STATE INITIALIZATION (ERROR FIX) ---
 if 'pred_task' not in st.session_state:
     st.session_state.pred_task = None
 if 'pred_genre' not in st.session_state:
     st.session_state.pred_genre = None
 
-# --- 3. LOAD ML MODELS (PDF LOGIC) ---
+# --- 3. SMART PATH LOGIC FOR ML FILES ---
+# Ithu thaan unga sub-folder issue-ah solve pannum
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @st.cache_resource
 def load_models():
-    try:
-        with open('nb_task.pkl', 'rb') as f: nb_model = pickle.load(f)
-        with open('knn_music.pkl', 'rb') as f: knn_model = pickle.load(f)
-        with open('encoders.pkl', 'rb') as f: encoders = pickle.load(f)
-        return nb_model, knn_model, encoders, True
-    except:
+    # Constructing full paths for files
+    nb_path = os.path.join(BASE_DIR, 'nb_task.pkl')
+    knn_path = os.path.join(BASE_DIR, 'knn_music.pkl')
+    enc_path = os.path.join(BASE_DIR, 'encoders.pkl')
+    
+    if os.path.exists(nb_path) and os.path.exists(knn_path) and os.path.exists(enc_path):
+        try:
+            with open(nb_path, 'rb') as f: nb_model = pickle.load(f)
+            with open(knn_path, 'rb') as f: knn_model = pickle.load(f)
+            with open(enc_path, 'rb') as f: encoders = pickle.load(f)
+            return nb_model, knn_model, encoders, True
+        except:
+            return None, None, None, False
+    else:
         return None, None, None, False
 
 nb_model, knn_model, encoders, is_ml_ready = load_models()
 
-# --- 4. ADVANCED CSS (PINK SIDEBAR & HIGH VISIBILITY) ---
+# --- 4. ADVANCED CSS (PINK SIDEBAR & NEON BRANDING) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;700;900&display=swap');
@@ -59,9 +70,10 @@ st.markdown("""
         font-family: 'Poppins', sans-serif !important;
         font-weight: 900 !important;
         font-size: 1.15rem !important;
+        text-shadow: 0 0 5px rgba(255, 0, 193, 0.3);
     }
 
-    /* Header Design */
+    /* Header Branding */
     .hero-header {
         text-align: center; padding: 40px;
         background: rgba(255, 255, 255, 0.05);
@@ -78,7 +90,7 @@ st.markdown("""
         letter-spacing: 12px;
     }
 
-    /* Glass Cards Style */
+    /* Glass Cards */
     .glass-card {
         background: rgba(10, 10, 20, 0.95);
         padding: 30px; border-radius: 25px;
@@ -104,7 +116,7 @@ st.markdown("""
     <div class="main-overlay"></div>
     """, unsafe_allow_html=True)
 
-# --- 5. AUDIO AI LOGIC ---
+# --- 5. AUDIO AI FUNCTIONS ---
 def voice_to_music(audio, sr):
     f0, _, _ = librosa.pyin(audio, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
     f0 = np.nan_to_num(f0)
@@ -130,6 +142,7 @@ with st.sidebar:
         st.success("✅ AI ENGINE: ACTIVE")
     else:
         st.error("⚠️ ML FILES NOT FOUND")
+        st.info(f"Looking in: {BASE_DIR}") # Debug info
 
     choice = st.radio(
         "SELECT MODULE:",
@@ -152,11 +165,11 @@ if "Dashboard" in choice:
     st.snow()
     col1, col2 = st.columns([1.6, 1])
     with col1:
-        st.markdown("<div class='glass-card'><h2>Technova Dashboard</h2><p>Experience the next generation of sound intelligence. From ML-based mood prediction to creative AI music synthesis, we bridge the gap between AI matrum human senses.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h2>Technova Dashboard</h2><p>Welcome to the intersection of AI and Sound. Explore our smart prediction matrum creative tools designed for everyone.</p></div>", unsafe_allow_html=True)
     with col2:
         st.image("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&h=500&fit=crop", use_container_width=True)
 
-# --- 🧠 MOOD AI (YOUR UPDATED SEARCH LOGIC) ---
+# --- 🧠 MOOD AI ---
 elif "Mood AI" in choice:
     st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Task Prediction</h3></div>", unsafe_allow_html=True)
     
@@ -173,7 +186,7 @@ elif "Mood AI" in choice:
         "Rock": "rock energy music"
     }
 
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 1.2])
 
     with col1:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
@@ -201,7 +214,6 @@ elif "Mood AI" in choice:
         if st.session_state.pred_genre:
             genre = st.session_state.pred_genre
             search_query = genre_search_map.get(genre, "lofi focus music")
-            # Correct Search URL construction
             search_url = f"https://open.spotify.com/search/{search_query.replace(' ', '%20')}"
 
             st.markdown(f"""
@@ -227,7 +239,7 @@ elif "Creative Studio" in choice:
     tab1, tab2, tab3 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO MELODY"])
     
     with tab1:
-        st.write("On-the-spot Voice to Music:")
+        st.write("Record voice to convert:")
         voice = st.audio_input("Microphone Input")
         if voice and st.button("✨ TRANSFORM RECORDING"):
             y, sr = librosa.load(voice)
@@ -243,9 +255,9 @@ elif "Creative Studio" in choice:
             st.balloons()
 
     with tab3:
-        st.write("Convert Text Message to AI Melody:")
-        txt = st.text_input("Enter text (e.g. Technova Magic)")
-        if txt and st.button("🎵 GENERATE TUNE"):
+        st.write("Text message to AI Melody:")
+        txt = st.text_input("Enter text (e.g. Technova Pro)")
+        if txt and st.button("🎵 GENERATE MELODY"):
             mel, sr_mel = text_to_melody(txt)
             st.audio(mel, sample_rate=sr_mel)
             st.balloons()
