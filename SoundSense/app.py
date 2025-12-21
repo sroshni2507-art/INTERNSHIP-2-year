@@ -13,14 +13,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM & NEAT CSS DESIGN ---
+# --- 2. ADVANCED CSS (FIXED SIDEBAR & FONTS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Poppins:wght@300;400;600;800&display=swap');
 
-    /* Global Background & Dark Overlay */
+    /* Full App Background */
     .stApp {
-        background: url("https://images.unsplash.com/photo-1451187580459-43490279c072?q=80&w=2072&auto=format&fit=crop");
+        background: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop");
         background-size: cover;
         background-attachment: fixed;
     }
@@ -32,7 +32,25 @@ st.markdown("""
         z-index: -1;
     }
 
-    /* TECHNOVA HEADER - NEAT & BOLD */
+    /* --- SIDEBAR CUSTOMIZATION (ULTRA VISIBLE) --- */
+    [data-testid="stSidebar"] {
+        background-color: #1a1a2e !important; /* Deep Blue/Purple Background */
+        border-right: 2px solid #00d2ff !important;
+    }
+
+    /* Sidebar Text Colour (Word Visibility) */
+    [data-testid="stSidebar"] * {
+        color: #00d2ff !important; /* Cyan Neon for all text */
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 600 !important;
+    }
+
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {
+        color: #ff00c1 !important; /* Pink for sidebar headers */
+        font-family: 'Orbitron', sans-serif !important;
+    }
+
+    /* Dashboard Header */
     .hero-container {
         text-align: center;
         padding: 40px;
@@ -41,7 +59,6 @@ st.markdown("""
         border: 2px solid #00d2ff;
         backdrop-filter: blur(15px);
         margin-bottom: 25px;
-        box-shadow: 0 0 40px rgba(0, 210, 255, 0.2);
     }
 
     .company-title {
@@ -52,7 +69,6 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         letter-spacing: 12px;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
     }
 
     /* Professional Glass Cards */
@@ -65,36 +81,19 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
 
-    /* Fonts & Visibility - Poppins for neatness */
-    h2, h3 { 
-        color: #00d2ff !important; 
-        font-family: 'Orbitron', sans-serif; 
-        font-size: 2.6rem !important;
-        margin-bottom: 15px;
-    }
-    p, label, li, span { 
-        font-size: 1.4rem !important; 
-        color: #ffffff !important; 
-        font-family: 'Poppins', sans-serif;
-        font-weight: 400;
-        text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
-    }
+    /* Fonts & Buttons */
+    h2, h3 { color: #00d2ff !important; font-family: 'Orbitron', sans-serif; font-size: 2.6rem !important; }
+    p, label { font-size: 1.4rem !important; color: #ffffff !important; font-family: 'Poppins', sans-serif; }
     
-    /* Neon Action Buttons */
     .stButton>button {
         background: linear-gradient(45deg, #bc13fe, #00d2ff);
         border: none; color: white !important; border-radius: 50px;
         padding: 15px 45px; font-size: 1.5rem !important;
         font-family: 'Orbitron', sans-serif; width: 100%;
-        transition: 0.3s ease-in-out;
-        box-shadow: 0 5px 25px rgba(188, 19, 254, 0.4);
+        transition: 0.3s;
     }
-    .stButton>button:hover { transform: scale(1.05); box-shadow: 0 0 40px #00d2ff; }
+    .stButton>button:hover { transform: scale(1.05); box-shadow: 0 0 30px #00d2ff; }
 
-    /* Custom Input Boxes */
-    div[data-baseweb="input"] { border-radius: 15px !important; }
-    div[data-baseweb="select"] { border-radius: 15px !important; }
-    
     </style>
     <div class="main-overlay"></div>
     """, unsafe_allow_html=True)
@@ -111,47 +110,47 @@ def voice_to_music_logic(audio, sr):
 
 # --- 4. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.markdown("<h1 style='color:#ff00c1; font-family:Orbitron; text-align:center;'>TECHNOVA</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>TECHNOVA</h1>", unsafe_allow_html=True)
     st.image("https://cdn-icons-png.flaticon.com/512/3659/3659784.png", width=120)
     st.write("---")
     menu = ["🏠 Dashboard", "🧠 Mood & Spotify AI", "🎙️ Creative AI Studio", "♿ Hearing Assist"]
-    choice = st.sidebar.selectbox("SELECT MODULE", menu)
+    choice = st.selectbox("SELECT MODULE", menu)
     st.write("---")
-    st.markdown("<p style='text-align:center; font-size:1rem !important;'>System: Technova v5.0 Pro</p>", unsafe_allow_html=True)
     st.success("AI Core Status: Online")
+    st.info("System: Technova v5.0 Pro")
 
 # --- 5. TOP BRANDING HEADER ---
 st.markdown("""
     <div class="hero-container">
         <h1 class="company-title">TECHNOVA SOLUTION</h1>
-        <p style="letter-spacing: 6px; color:#92fe9d; font-size:1.6rem; font-weight:600; font-family:'Poppins';">Next-Gen Audio Intelligence</p>
+        <p style="letter-spacing: 6px; color:#92fe9d; font-size:1.6rem; font-weight:600;">Next-Gen Audio Intelligence</p>
     </div>
     """, unsafe_allow_html=True)
 
 # --- 6. MODULES ---
 
-# MODULE 1: DASHBOARD
+# DASHBOARD
 if choice == "🏠 Dashboard":
     st.snow()
     col1, col2 = st.columns([1.6, 1])
     with col1:
         st.markdown("""<div class='glass-card'>
             <h2>Welcome to SonicSense Pro</h2>
-            <p>Technova Solution bridges the gap between sound and technology. Use our AI tools to create music, optimize haptic patterns, and boost productivity.</p>
+            <p>Technova Solution bridges the gap between sound and technology. Our AI helps creators and the hearing impaired experience sound in new dimensions.</p>
             <ul>
-                <li>AI Voice-to-Instrument Conversion</li>
+                <li>Voice-to-Instrument Conversion</li>
                 <li>Vibrational Sound Optimization</li>
-                <li>Haptic Pattern Visualization</li>
+                <li>Haptic Sound Pattern Visualization</li>
             </ul>
         </div>""", unsafe_allow_html=True)
     with col2:
         st.image("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&h=500&fit=crop", use_container_width=True)
 
-# MODULE 2: MOOD & SPOTIFY AI (ERROR FIXED)
+# MOOD & SPOTIFY AI (ERROR FIXED)
 elif choice == "🧠 Mood & Spotify AI":
     st.markdown("<h2>Productivity Flow & Mood AI</h2>", unsafe_allow_html=True)
     
-    # Corrected IDs to prevent "Page Not Found"
+    # Corrected Playlist Embed Links
     mood_spotify_map = {
         "Energetic": "37i9dQZF1DX76W9SwwE6v4", 
         "Calm": "37i9dQZF1DX8UebicO9uaR",      
@@ -164,18 +163,18 @@ elif choice == "🧠 Mood & Spotify AI":
     with col1:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         u_mood = st.selectbox("CHOOSE YOUR VIBE:", list(mood_spotify_map.keys()))
-        u_goal = st.text_input("YOUR GOAL TODAY:", value="Ex: Finish Internship Project")
+        u_goal = st.text_input("YOUR GOAL TODAY:", value="Finish Internship Project")
         
         if st.button("🚀 LAUNCH SESSION"):
             st.session_state.mood_active = True
-            st.balloons() # BALLOONS EFFECT
-            st.snow()     # SNOW EFFECT
+            st.balloons()
+            st.snow()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
         if 'mood_active' in st.session_state and st.session_state.mood_active:
             playlist_id = mood_spotify_map[u_mood]
-            # Updated embed structure for absolute reliability
+            # Updated embed URL structure
             embed_url = f"https://open.spotify.com/embed/playlist/{playlist_id}?utm_source=generator&theme=0"
             
             st.markdown(f"""
@@ -188,11 +187,11 @@ elif choice == "🧠 Mood & Spotify AI":
         else:
             st.image("https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=800", use_container_width=True)
 
-# MODULE 3: CREATIVE STUDIO
+# CREATIVE STUDIO
 elif choice == "🎙️ Creative AI Studio":
     st.markdown("<h2>Creative AI Studio</h2>", unsafe_allow_html=True)
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    v_in = st.audio_input("Record your voice to convert to music:")
+    v_in = st.audio_input("Record voice to generate music:")
     if v_in:
         y, sr = librosa.load(v_in)
         if st.button("✨ TRANSFORM TO MUSIC"):
@@ -202,14 +201,14 @@ elif choice == "🎙️ Creative AI Studio":
             st.audio(music, sample_rate=sr)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# MODULE 4: HEARING ASSIST
+# HEARING ASSIST
 elif choice == "♿ Hearing Assist":
     st.markdown("<h2>Inclusive Hearing Lab</h2>", unsafe_allow_html=True)
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.write("Special frequency shifting for bone-conduction vibrations.")
+    st.write("Haptic sound patterns for the hearing impaired.")
     up_h = st.file_uploader("Upload audio for optimization", type=['mp3', 'wav'])
     if up_h:
         st.balloons()
         st.snow()
-        st.success("Sound optimized for Earspots. Connect device for haptic patterns.")
+        st.success("Optimization Complete. Ready for Earspots.")
     st.markdown("</div>", unsafe_allow_html=True)
