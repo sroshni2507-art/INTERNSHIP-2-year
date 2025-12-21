@@ -9,7 +9,7 @@ st.title("🌸 Iris Flower Classification – SVM")
 
 # -------- SAFE MODEL PATH --------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "svm_model.pkl")
+MODEL_PATH = os.path.join(BASE_DIR, "svm_model.pkl")
 
 # -------- LOAD MODEL --------
 with open(MODEL_PATH, "rb") as file:
