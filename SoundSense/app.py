@@ -35,9 +35,9 @@ st.markdown("""
         border-right: 2px solid #ff00c1;
     }
     
-    /* Sidebar words in Pink */
+    /* Sidebar words in Pink for high visibility */
     [data-testid="stSidebar"] * {
-        color: #ff00c1 !important; /* PINK COLOUR WORDS */
+        color: #ff00c1 !important; 
         font-family: 'Poppins', sans-serif !important;
         font-weight: 700 !important;
         font-size: 1.1rem !important;
@@ -71,7 +71,7 @@ st.markdown("""
 
     /* Glass Cards */
     .glass-card {
-        background: rgba(15, 15, 25, 0.9);
+        background: rgba(15, 15, 25, 0.92);
         padding: 30px; border-radius: 25px;
         border: 1px solid rgba(255, 0, 193, 0.4);
         margin-bottom: 25px;
@@ -80,22 +80,7 @@ st.markdown("""
     h2, h3 { color: #00d2ff !important; font-family: 'Orbitron', sans-serif; font-size: 2.5rem !important; }
     p, label { font-size: 1.4rem !important; color: #ffffff !important; font-family: 'Poppins', sans-serif; }
     
-    /* Spotify Button Style */
-    .spotify-btn {
-        background: linear-gradient(45deg, #1DB954, #191414);
-        color: white !important;
-        text-decoration: none;
-        padding: 15px 40px;
-        border-radius: 50px;
-        font-weight: 800;
-        font-family: 'Orbitron', sans-serif;
-        display: inline-block;
-        margin-top: 20px;
-        box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
-    }
-    .spotify-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px #1DB954; }
-
-    /* Action Button */
+    /* Action Button for AI Studio */
     .stButton>button {
         background: linear-gradient(45deg, #ff00c1, #00d2ff);
         border: none; color: white !important; border-radius: 50px;
@@ -157,7 +142,7 @@ if choice == "🏠 Dashboard":
 elif choice == "🧠 Mood & Spotify AI":
     st.markdown("<h2>Productivity Flow & Mood AI</h2>", unsafe_allow_html=True)
     
-    # Direct Playlist Links (No embedding = No error)
+    # FIXED UNIVERSAL PLAYLIST LINKS
     mood_spotify_map = {
         "Energetic 🔥": "https://open.spotify.com/playlist/37i9dQZF1DX76W9SwwE6v4", 
         "Calm 🌊": "https://open.spotify.com/playlist/37i9dQZF1DX8UebicO9uaR",      
@@ -172,25 +157,21 @@ elif choice == "🧠 Mood & Spotify AI":
         u_mood = st.selectbox("CHOOSE YOUR VIBE:", list(mood_spotify_map.keys()))
         u_goal = st.text_input("YOUR GOAL TODAY:", value="Finish Internship Project")
         
-        # Link button to open Spotify in new tab
+        # Using link_button for most stable experience
         spotify_url = mood_spotify_map[u_mood]
-        st.markdown(f"""
-            <br>
-            <p style='color:#92fe9d;'>Step 1: Click the button below to open your {u_mood} playlist.</p>
-            <a href="{spotify_url}" target="_blank" class="spotify-btn">🟢 OPEN SPOTIFY PLAYLIST</a>
-            <br><br>
-            <p style='color:#00d2ff;'>Step 2: Once opened, click 'Launch' to start your Technova session.</p>
-        """, unsafe_allow_html=True)
         
+        st.write("### Step 1: Open Spotify")
+        st.link_button(f"🟢 OPEN {u_mood.upper()} PLAYLIST", spotify_url, use_container_width=True)
+        
+        st.write("### Step 2: Start Session")
         if st.button("🚀 LAUNCH TECHNOVA SESSION"):
             st.balloons()
             st.snow()
-            st.success(f"Session Started! Goal: {u_goal}")
+            st.success(f"Session Started! Target Goal: {u_goal}")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
         st.image("https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=800", use_container_width=True)
-        st.markdown("<p style='text-align:center;'>Use Spotify in the background for a perfect Flow State.</p>", unsafe_allow_html=True)
 
 # --- CREATIVE AI STUDIO ---
 elif choice == "🎙️ Creative AI Studio":
