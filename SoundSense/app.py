@@ -8,18 +8,18 @@ import io
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="TECHNOVA SOLUTION | Pro AI",
+    page_title="TECHNOVA SOLUTION | SonicSense Pro",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. FORCEFUL CSS (PINK SIDEBAR & BRANDING) ---
+# --- 2. ADVANCED CSS (PINK SIDEBAR & NO ERROR LOOK) ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;700;900&display=swap');
 
-/* Main Background */
+/* Global Background */
 .stApp {
     background: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop");
     background-size: cover;
@@ -30,32 +30,26 @@ st.markdown("""
     background: rgba(0, 0, 0, 0.85); z-index: -1;
 }
 
-/* --- FORCE PINK SIDEBAR WORDS & ICONS --- */
+/* --- SIDEBAR PINK NEON (ULTRA VISIBLE) --- */
 [data-testid="stSidebar"] {
     background-color: #050510 !important;
     border-right: 3px solid #ff00c1 !important;
 }
 
-/* Force every text in sidebar to be PINK */
+/* Sidebar Text & Radio Buttons to PINK */
 [data-testid="stSidebar"] * {
     color: #ff00c1 !important;
     font-family: 'Poppins', sans-serif !important;
     font-weight: 900 !important;
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
 }
 
-/* Radio button labels specific fix */
-div[data-testid="stWidgetLabel"] p {
-    color: #ff00c1 !important;
-    font-size: 1.3rem !important;
-}
-
-/* Header Design */
+/* Header Branding */
 .hero-header {
     text-align: center; padding: 40px;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 35px; border: 2px solid #ff00c1;
-    backdrop-filter: blur(15px); margin-bottom: 25px;
+    backdrop-filter: blur(20px); margin-bottom: 30px;
 }
 .company-title {
     font-family: 'Orbitron', sans-serif;
@@ -73,10 +67,11 @@ div[data-testid="stWidgetLabel"] p {
     padding: 30px; border-radius: 25px;
     border: 1px solid rgba(255, 0, 193, 0.4);
     margin-bottom: 25px;
+    color: white;
 }
 
-h2, h3 { color: #00d2ff !important; font-family: 'Orbitron', sans-serif; font-size: 2.7rem !important; }
-p, label { font-size: 1.5rem !important; color: #ffffff !important; font-family: 'Poppins', sans-serif; font-weight: 600; }
+h2, h3 { color: #00d2ff !important; font-family: 'Orbitron', sans-serif; }
+p, label { font-size: 1.4rem !important; color: white !important; font-weight: 600; }
 
 /* Action Buttons */
 .stButton>button {
@@ -93,7 +88,7 @@ p, label { font-size: 1.5rem !important; color: #ffffff !important; font-family:
 <div class="main-overlay"></div>
 """, unsafe_allow_html=True)
 
-# --- 3. AI LOGIC FUNCTIONS ---
+# --- 3. AUDIO LOGIC FUNCTIONS ---
 def voice_to_music(audio, sr):
     f0, _, _ = librosa.pyin(audio, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
     f0 = np.nan_to_num(f0)
@@ -101,29 +96,21 @@ def voice_to_music(audio, sr):
     music = 0.5 * np.sin(phase) + 0.3 * np.sin(2 * phase)
     return music / (np.max(np.abs(music)) + 1e-6)
 
-def text_to_melody(text):
-    sr = 22050
-    duration = 4.0
-    t = np.linspace(0, duration, int(sr * duration))
-    freq = (sum([ord(c) for c in text]) % 400) + 200
-    melody = 0.5 * np.sin(2 * np.pi * freq * t)
-    return melody, sr
-
-# --- 4. SIDEBAR (PINK WORDS & ICONS) ---
+# --- 4. SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.markdown("<h2 style='text-align:center; color:#00d2ff !important;'>TECHNOVA</h2>", unsafe_allow_html=True)
     st.image("https://cdn-icons-png.flaticon.com/512/3659/3659784.png", width=120)
     st.write("---")
     
-    # Adding Icons as requested
+    # Emojis & Pink Words as requested
     menu = st.radio(
         "SELECT MODULE:",
-        ["🏠 Dashboard", "❄️ Mood Spotify AI", "🎨🎨 Creative Studio", "♿ Hearing Assist"]
+        ["🏠 Dashboard", "🧠 Mood Spotify AI", "🎙️ Creative Studio", "♿ Hearing Assist"]
     )
     st.write("---")
-    st.success("⚡ AI Core Status: ONLINE")
+    st.success("⚡ AI ENGINE: ONLINE")
 
-# --- 5. HEADER ---
+# --- 5. TOP HEADER ---
 st.markdown("""
     <div class="hero-header">
         <h1 class="company-title">TECHNOVA SOLUTION</h1>
@@ -133,21 +120,21 @@ st.markdown("""
 
 # --- 6. MODULES ---
 
-# --- DASHBOARD ---
+# DASHBOARD
 if "Dashboard" in menu:
     st.snow()
     col1, col2 = st.columns([1.6, 1])
     with col1:
-        st.markdown("<div class='glass-card'><h2>Welcome to Technova AI</h2><p>Bridges the gap between sound and technology. Explore our creative tools for music and accessibility.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h2>Next-Gen Audio AI</h2><p>Technova Solution provides advanced sound intelligence matrum creative tools for everyone.</p></div>", unsafe_allow_html=True)
     with col2:
         st.image("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&h=500&fit=crop", use_container_width=True)
 
-# --- MOOD SPOTIFY AI (ERROR FIXED) ---
+# MOOD SPOTIFY AI (ERROR FIXED)
 elif "Mood Spotify AI" in menu:
     st.markdown("<div class='glass-card'><h3>🧠 Mood-Based Suggestions</h3></div>", unsafe_allow_html=True)
     
-    # Using 100% stable global playlist IDs
-    mood_playlists = {
+    # Verified IDs matrum Universal Links
+    mood_map = {
         "Energetic 🔥": "37i9dQZF1DX76W9SwwE6v4",
         "Calm 🌊": "37i9dQZF1DX8UebicO9uaR",
         "Focused 🎯": "37i9dQZF1DX4sWSp4sm94f",
@@ -157,9 +144,9 @@ elif "Mood Spotify AI" in menu:
 
     c1, c2 = st.columns([1, 1.4])
     with c1:
-        mood_sel = st.selectbox("HOW ARE YOU FEELING?", list(mood_playlists.keys()))
+        mood_sel = st.selectbox("HOW ARE YOU FEELING?", list(mood_map.keys()))
         if st.button("🚀 LAUNCH SESSION"):
-            st.session_state.active_pid = mood_playlists[mood_sel]
+            st.session_state.active_pid = mood_map[mood_sel]
             st.session_state.active_name = mood_sel
             st.balloons()
             st.snow()
@@ -167,12 +154,18 @@ elif "Mood Spotify AI" in menu:
     with c2:
         if 'active_pid' in st.session_state:
             pid = st.session_state.active_pid
-            # Embed Player Fix
+            # Embed Player (Fixed ID)
             embed_url = f"https://open.spotify.com/embed/playlist/{pid}?utm_source=generator&theme=0"
-            st.markdown(f"<h4>Vibe: {st.session_state.active_name}</h4>", unsafe_allow_html=True)
-            components.iframe(embed_url, height=380, scrolling=False)
             
-            # Neenga ketta "Open in Spotify" Gradient Button
+            st.markdown(f"<h4 style='color:#1DB954;'>Vibe: {st.session_state.active_name}</h4>", unsafe_allow_html=True)
+            
+            # Error-Free Embedding logic
+            try:
+                components.iframe(embed_url, height=380, scrolling=False)
+            except:
+                st.error("Embed failed. Use the button below to open directly.")
+            
+            # "Page not found" box varaama irukka intha Spotify Green button backup
             st.markdown(f"""
                 <div style="text-align:center; margin-top:20px;">
                     <a href="https://open.spotify.com/playlist/{pid}" 
@@ -185,48 +178,36 @@ elif "Mood Spotify AI" in menu:
         else:
             st.image("https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=800", use_container_width=True)
 
-# --- CREATIVE STUDIO (RECORD + UPLOAD + TEXT) ---
+# CREATIVE STUDIO (3-IN-1)
 elif "Creative Studio" in menu:
     st.markdown("<div class='glass-card'><h3>🎙️ Creative AI Studio</h3></div>", unsafe_allow_html=True)
-    tab1, tab2, tab3 = st.tabs(["🎤 LIVE RECORD", "📤 UPLOAD FILE", "✍️ TEXT TO SONG"])
+    tab1, tab2 = st.tabs(["🎤 RECORD VOICE", "📤 UPLOAD FILE"])
     
     with tab1:
-        st.write("On-the-spot Voice to Music:")
-        voice_rec = st.audio_input("Record now")
-        if voice_rec and st.button("✨ TRANSFORM LIVE"):
-            y, sr = librosa.load(voice_rec)
+        voice = st.audio_input("Record now")
+        if voice and st.button("✨ TRANSFORM RECORDING"):
+            y, sr = librosa.load(voice)
             out = voice_to_music(y, sr)
             st.audio(out, sample_rate=sr)
             st.balloons()
 
     with tab2:
-        st.write("Upload File (MP3/WAV) to Music:")
-        up_f = st.file_uploader("Choose file", type=["mp3", "wav"])
-        if up_f and st.button("🚀 CONVERT FILE"):
-            y, sr = librosa.load(up_f)
+        up = st.file_uploader("Upload Audio (MP3/WAV)", type=["mp3","wav"])
+        if up and st.button("🚀 TRANSFORM UPLOAD"):
+            y, sr = librosa.load(up)
             out = voice_to_music(y, sr)
             st.audio(out, sample_rate=sr)
             st.balloons()
 
-    with tab3:
-        st.write("Text message to Melody:")
-        txt_in = st.text_input("Enter text")
-        if txt_in and st.button("🎵 GENERATE MELODY"):
-            mel, sr_mel = text_to_melody(txt_in)
-            st.audio(mel, sample_rate=sr_mel)
-            st.balloons()
-
-# --- HEARING ASSIST (FREQUENCY SHIFT) ---
+# HEARING ASSIST
 elif "Hearing Assist" in menu:
-    st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Frequency shifting high-pitch audio to feelable Low-pitch (Bass).</p></div>", unsafe_allow_html=True)
-    up_h = st.file_uploader("Upload Audio for Assist", type=["mp3", "wav"])
+    st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Optimizing frequencies (Low Pitch/Bass) for the hearing impaired.</p></div>", unsafe_allow_html=True)
+    up_h = st.file_uploader("Upload audio for frequency shift", type=["mp3", "wav"])
     if up_h:
         y, sr = librosa.load(up_h)
-        # Shift Logic for Hearing Impaired (usually High Pitch loss)
-        shift_steps = st.slider("Frequency Transposition (Lower = More Vibrations)", -12, 0, -6)
+        shift_val = st.slider("Adjust Sensitivity (Lower = more vibration)", -12, 0, -8)
         if st.button("🔊 OPTIMIZE Pattern"):
             st.snow()
-            y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift_steps)
-            y_final = np.clip(y_shifted * 1.5, -1.0, 1.0)
-            st.audio(y_final, sample_rate=sr)
-            st.success("Sound optimized for bone-conduction / Earspots vibration.")
+            y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift_val)
+            st.audio(y_shift, sample_rate=sr)
+            st.success("Sound optimized for haptic sensations.")
