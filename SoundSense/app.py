@@ -146,7 +146,7 @@ with st.sidebar:
 
     choice = st.radio(
         "SELECT MODULE:",
-        ["🏠 Dashboard", "🧠 Mood AI", "🎙️ Creative Studio", "♿ Hearing Assist"]
+        ["🏠 Dashboard", "❄️❄️❄️Mood AI", "🎨🎨🎨 Creative Studio", "♿ Hearing Assist"]
     )
     st.write("---")
 
