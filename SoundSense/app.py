@@ -102,7 +102,7 @@ with st.sidebar:
     if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
     else: st.error("⚠️ ML FILES MISSING")
     
-    choice = st.radio("SELECT MODULE:", ["🏠 Dashboard", "Mood AI", "Creative Studio", "♿ Hearing Assist"])
+    choice = st.radio("SELECT MODULE:", ["🏠 Dashboard", "❄️❄️❄️ Mood AI", "🎨🎨🎨 Creative Studio", "♿ Hearing Assist"])
 
 # --- 7. HEADER ---
 st.markdown("""<div class="hero-header"><h1 class="company-title">TECHNOVA SOLUTION</h1><p style="letter-spacing: 6px; color:#92fe9d; font-size:1.6rem; font-weight:700;">SONICSENSE ULTRA PRO</p></div>""", unsafe_allow_html=True)
