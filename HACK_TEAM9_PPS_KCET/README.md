@@ -1,5 +1,16 @@
 # 📘 Study vs Distraction Environment Detection
 
+
+## 📦 Large Files (Model / Dataset)
+
+Due to GitHub file size limitations (25 MB), the large files used in this project are hosted on Google Drive.
+
+🔗 **Download Link**:  
+https://drive.google.com/drive/folders/1pIGlP8iJjPgxk9VdCqZ69qEj7t5_2fUz?usp=drive_link
+
+📌 Please download the files from the above link and place them in the required project folders before running the code.
+
+
 ## 🔍 Problem Statement
 Students often face distractions while studying.
 This project aims to classify an image as either a **Study Environment** or a **Distraction Environment** using Machine Learning / Deep Learning techniques.
