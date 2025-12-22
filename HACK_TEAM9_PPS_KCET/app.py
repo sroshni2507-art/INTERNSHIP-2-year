@@ -1,63 +1,47 @@
-import streamlit as st
-import tensorflow as tf
-import pickle
-import numpy as np
-from PIL import Image
 import os
+import gdown
+import pickle
+from tensorflow.keras.models import load_model
 
-# Page config
-st.set_page_config(
-    page_title="Study vs Distraction Environment",
-    page_icon="📘",
-    layout="centered"
-)
+# -------------------------------
+# Google Drive FILE IDs
+# -------------------------------
+PKL_FILE_ID = "https://drive.google.com/file/d/1bMdf8i71eLlVxsT48C2E26OfC79HETyU/view?usp=drive_link"
+H5_FILE_ID = "https://drive.google.com/file/d/1jNa9LLSnKqx53mPtx4EQpvcKOcapaUPM/view?usp=drive_link"
 
-st.title("📘 Study vs Distraction Environment Detection")
-st.write("Upload an image to classify the environment")
+# Local paths
+PKL_PATH = "model.pkl"
+H5_PATH = "model.h5"
 
-# -------- Model Loader (AUTO detect .h5 or .pkl) --------
-@st.cache_resource
-def load_model():
-    if os.path.exists("study_distraction_model.h5"):
-        st.info("Loaded TensorFlow model (.h5)")
-        return tf.keras.models.load_model("study_distraction_model.h5"), "h5"
+# -------------------------------
+# Download PKL if not exists
+# -------------------------------
+if not os.path.exists(PKL_PATH):
+    print("Downloading PKL model...")
+    gdown.download(
+        f"https://drive.google.com/uc?id={PKL_FILE_ID}",
+        PKL_PATH,
+        quiet=False
+    )
 
-    elif os.path.exists("model.pkl"):
-        st.info("Loaded Pickle model (.pkl)")
-        with open("model.pkl", "rb") as f:
-            return pickle.load(f), "pkl"
+# -------------------------------
+# Download H5 if not exists
+# -------------------------------
+if not os.path.exists(H5_PATH):
+    print("Downloading H5 model...")
+    gdown.download(
+        f"https://drive.google.com/uc?id={H5_FILE_ID}",
+        H5_PATH,
+        quiet=False
+    )
 
-    else:
-        st.error("❌ No model file found (.h5 or .pkl)")
-        return None, None
+# -------------------------------
+# Load models
+# -------------------------------
+with open(PKL_PATH, "rb") as f:
+    pkl_model = pickle.load(f)
 
-model, model_type = load_model()
+h5_model = load_model(H5_PATH)
 
-# -------- Image Upload --------
-uploaded_file = st.file_uploader(
-    "📤 Upload an image",
-    type=["jpg", "jpeg", "png"]
-)
+print("✅ Models loaded successfully")
 
-if uploaded_file is not None and model is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_container_width=True)
-
-    # Preprocess image (common for both)
-    img = image.resize((224, 224))
-    img = np.array(img) / 255.0
-    img = np.expand_dims(img, axis=0)
-
-    # Prediction
-    if model_type == "h5":
-        prediction = model.predict(img)
-
-    else:  # pkl model
-        prediction = model.predict_proba(img.reshape(1, -1))[:, 1]
-
-    st.subheader("🔍 Prediction Result")
-
-    if prediction[0] > 0.5:
-        st.success("📘 Study Environment")
-    else:
-        st.error("📵 Distraction Environment")
