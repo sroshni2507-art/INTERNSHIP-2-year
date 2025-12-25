@@ -1,5 +1,6 @@
 import streamlit as st
 import librosa
+import librosa.display
 import numpy as np
 import pickle
 import os
@@ -110,16 +111,16 @@ st.markdown("""<div class="hero-header"><h1 class="company-title">TECHNOVA SOLUT
 # --- 8. MODULES ---
 
 # --- DASHBOARD ---
-if "Dashboard" in choice:
+if choice == "🏠 Dashboard":
     st.snow()
     col1, col2 = st.columns([1.6, 1])
     with col1:
-        st.markdown("<div class='glass-card'><h2>The Future of Audio</h2><p>Technova Solution bridges the gap between sound and technology. Explore our smart prediction matrum creative tools designed for everyone.</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h2>The Future of Audio</h2><p>Technova Solution bridges the gap between sound and technology. Explore our smart prediction and creative tools designed for everyone.</p></div>", unsafe_allow_html=True)
     with col2:
         st.image("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&h=500&fit=crop", use_container_width=True)
 
 # --- MOOD AI ---
-elif "Mood AI" in choice:
+elif choice == "❄️❄️❄️ Mood AI":
     st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Task Prediction</h3></div>", unsafe_allow_html=True)
     genre_search_map = {"Lo-Fi": "lofi focus music", "Electronic": "electronic workout music", "Jazz": "smooth jazz music", "Classical": "classical focus music", "Pop": "top pop hits", "Ambient": "ambient calm music", "Rock": "rock energy music"}
     col1, col2 = st.columns([1, 1.2])
@@ -145,7 +146,7 @@ elif "Mood AI" in choice:
             st.markdown(f"<div class='glass-card' style='text-align:center; border: 2px solid #1DB954;'><h3>🎧 Recommendation</h3><p><b>Task:</b> {st.session_state.pred_task}</p><p><b>Music:</b> {genre}</p><br><a href='{search_url}' target='_blank'><button style='background:linear-gradient(45deg,#1DB954,#1ed760); color:white; padding:15px 30px; border:none; border-radius:50px; font-weight:800; cursor:pointer;'>🔗 OPEN IN SPOTIFY</button></a></div>", unsafe_allow_html=True)
 
 # --- CREATIVE STUDIO ---
-elif "Creative Studio" in choice:
+elif choice == "🎨🎨🎨 Creative Studio":
     st.markdown("<div class='glass-card'><h3>🎙️ Creative AI Studio</h3></div>", unsafe_allow_html=True)
     tab1, tab2, tab3, tab4 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO SONG", "🎵 AI BGM MIXER"])
     
@@ -162,7 +163,7 @@ elif "Creative Studio" in choice:
             st.audio(processed, sample_rate=sr); st.balloons()
     
     with tab3:
-        lyrics = st.text_area("Input Lyrics (e.g., Kanguva lyrics):")
+        lyrics = st.text_area("Input Lyrics:")
         if lyrics and st.button("🎵 GENERATE THEME"):
             song, sr_s = text_to_song_logic(lyrics)
             st.audio(song, sample_rate=sr_s); st.balloons()
@@ -174,27 +175,19 @@ elif "Creative Studio" in choice:
 
         if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
             with st.spinner("Processing Fusion..."):
-                # Load both files
                 v_data, v_sr = librosa.load(v_file_mix, sr=None)
-                b_data, b_sr = librosa.load(b_file_mix, sr=v_sr) # Match sample rates
-
-                # Adjust volume (bgm = bgm - 15dB is roughly multiplying by 0.17)
+                b_data, b_sr = librosa.load(b_file_mix, sr=v_sr)
                 b_data = b_data * 0.17 
-
-                # Match lengths (Overlay logic)
                 min_len = min(len(v_data), len(b_data))
                 mixed = v_data[:min_len] + b_data[:min_len]
-
-                # Save and Play
                 final_path = "final_song.wav"
                 sf.write(final_path, mixed, v_sr)
-                
                 st.audio(final_path)
-                st.success("final_song.wav ready (Mixed using Librosa) ✅")
+                st.success("final_song.wav ready ✅")
                 st.balloons()
 
 # --- HEARING ASSIST ---
-elif "Hearing Assist" in choice:
+elif choice == "♿ Hearing Assist":
     st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Optimizing sound frequencies for vibrations.</p></div>", unsafe_allow_html=True)
     up_h = st.file_uploader("Upload audio for frequency shift", type=["mp3", "wav"], key="hearing_up")
     if up_h:
@@ -204,4 +197,4 @@ elif "Hearing Assist" in choice:
             st.snow()
             y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
             st.audio(y_shift * 1.5, sample_rate=sr)
-            st.success("Sound optimized for Earspots.")
+            st.success("Sound optimized successfully.")
