@@ -168,33 +168,31 @@ elif "Creative Studio" in choice:
         if lyrics and st.button("🎵 GENERATE THEME"):
             song, sr_s = text_to_song_logic(lyrics)
             st.audio(song, sample_rate=sr_s); st.balloons()
+# --- Backup Mix Logic using Librosa (No ffmpeg needed for basic mix) ---
+with tab4:
+    st.write("Mix your voice with background music.")
+    v_file_mix = st.file_uploader("Upload Voice File:", type=["wav", "mp3"], key="v_mix")
+    b_file_mix = st.file_uploader("Upload BGM File:", type=["wav", "mp3"], key="b_mix")
 
-    # --- நீங்கள் கேட்ட BGM MIXER பகுதி இதோ ---
-    with tab4:
-        st.write("Mix your voice with background music.")
-        # Upload inputs
-        v_file_mix = st.file_uploader("Upload Voice File (rec2.mp3 style):", type=["mp3", "wav"], key="v_mix")
-        b_file_mix = st.file_uploader("Upload BGM File (bike-ride style):", type=["mp3", "wav"], key="b_mix")
+    if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
+        with st.spinner("Processing Fusion..."):
+            # Load both files
+            v_data, v_sr = librosa.load(v_file_mix, sr=None)
+            b_data, b_sr = librosa.load(b_file_mix, sr=v_sr) # Match sample rates
 
-        if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
-            with st.spinner("Processing Fusion..."):
-                # Save uploaded files temporarily to work with pydub
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as v_tmp, \
-                     tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as b_tmp:
-                    
-                    v_tmp.write(v_file_mix.read())
-                    b_tmp.write(b_file_mix.read())
-                    
-                    # pydub Logic
-                    voice_seg = AudioSegment.from_file(v_tmp.name)
-                    bgm_seg = AudioSegment.from_file(b_tmp.name)
+            # Adjust volume (bgm = bgm - 15dB is roughly dividing by 5.6)
+            b_data = b_data * 0.17 
 
-                    # --- உங்கள் கோட் இதோ ---
-                    bgm_seg = bgm_seg - 15
-                    final = bgm_seg.overlay(voice_seg)
-                    
-                    final_path = "final_song.wav"
-                    final.export(final_path, format="wav")
+            # Match lengths
+            min_len = min(len(v_data), len(b_data))
+            mixed = v_data[:min_len] + b_data[:min_len]
+
+            # Save and Play
+            final_path = "final_song.wav"
+            sf.write(final_path, mixed, v_sr)
+            
+            st.audio(final_path)
+            st.success("final_song.wav ready (Mixed using Librosa) ✅")
                     
                     # Result
                     st.audio(final_path)
