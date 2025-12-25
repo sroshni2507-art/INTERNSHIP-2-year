@@ -1,214 +1,215 @@
 import streamlit as st
 import librosa
-import librosa.display
 import numpy as np
-import matplotlib.pyplot as plt
-import soundfile as sf
 import pickle
 import os
+import matplotlib.pyplot as plt
+import io
 import tempfile
 from datetime import datetime
-from moviepy import VideoFileClip
-import whisper
-from transformers import pipeline
+from pydub import AudioSegment # புதிதாக சேர்க்கப்பட்டது
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="VOCALIS AI | Ultimate Audio Engine",
-    page_icon="🎙️",
-    layout="wide"
+    page_title="TECHNOVA SOLUTION | Pro AI",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- 2. ADVANCED CSS (NEON THEME & ANIMATIONS) ---
+# --- 2. SESSION STATE INITIALIZATION ---
+if 'pred_task' not in st.session_state:
+    st.session_state.pred_task = None
+if 'pred_genre' not in st.session_state:
+    st.session_state.pred_genre = None
+
+# --- 3. SMART PATH LOGIC FOR ML FILES ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@st.cache_resource
+def load_models():
+    nb_path = os.path.join(BASE_DIR, 'nb_task.pkl')
+    knn_path = os.path.join(BASE_DIR, 'knn_music.pkl')
+    enc_path = os.path.join(BASE_DIR, 'encoders.pkl')
+    if os.path.exists(nb_path) and os.path.exists(knn_path) and os.path.exists(enc_path):
+        try:
+            with open(nb_path, 'rb') as f: nb_model = pickle.load(f)
+            with open(knn_path, 'rb') as f: knn_model = pickle.load(f)
+            with open(enc_path, 'rb') as f: encoders = pickle.load(f)
+            return nb_model, knn_model, encoders, True
+        except: return None, None, None, False
+    else: return None, None, None, False
+
+nb_model, knn_model, encoders, is_ml_ready = load_models()
+
+# --- 4. ADVANCED CSS ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;600;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;700;900&display=swap');
     
-    .stApp {
-        background: url("https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2070&auto=format&fit=crop");
-        background-size: cover;
-        background-attachment: fixed;
+    .stApp { background: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop"); background-size: cover; background-attachment: fixed; }
+    .main-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.82); z-index: -1; }
+    
+    [data-testid="stSidebar"] { background-color: #050510 !important; border-right: 3px solid #ff00c1 !important; }
+    [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
+        color: #ff00c1 !important; font-family: 'Poppins', sans-serif !important; font-weight: 900 !important; font-size: 1.15rem !important;
     }
-    .main-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: -1; }
-    
-    /* Neon Sidebar */
-    [data-testid="stSidebar"] { background-color: #050510 !important; border-right: 2px solid #00d2ff !important; }
-    [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #00d2ff !important; font-weight: 900; }
 
-    /* Glassmorphism Cards */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(15px);
-        border-radius: 20px;
-        border: 1px solid rgba(0, 210, 255, 0.3);
-        padding: 25px;
-        margin-bottom: 20px;
-        transition: transform 0.3s ease;
-    }
-    .glass-card:hover { transform: scale(1.02); border-color: #ff00c1; }
+    .hero-header { text-align: center; padding: 40px; background: rgba(255, 255, 255, 0.05); border-radius: 35px; border: 2px solid #ff00c1; backdrop-filter: blur(15px); margin-bottom: 30px; }
+    .company-title { font-family: 'Orbitron', sans-serif; font-size: 5rem !important; font-weight: 900; background: linear-gradient(90deg, #ff00c1, #00d2ff, #92fe9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 12px; }
+    .glass-card { background: rgba(10, 10, 20, 0.95); padding: 30px; border-radius: 25px; border: 1px solid rgba(255, 0, 193, 0.4); margin-bottom: 25px; }
     
-    .hero-title {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 4rem !important;
-        background: linear-gradient(90deg, #00d2ff, #ff00c1);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        font-weight: 900;
-        letter-spacing: 5px;
-    }
-    
-    h1, h2, h3 { font-family: 'Orbitron', sans-serif !important; color: #00d2ff !important; }
-    p, label { font-family: 'Poppins', sans-serif !important; color: #e0e0e0 !important; }
-    
-    .stButton>button {
-        background: linear-gradient(45deg, #00d2ff, #ff00c1);
-        color: white !important;
-        border-radius: 30px;
-        border: none;
-        padding: 10px 30px;
-        font-weight: bold;
-        transition: 0.5s;
-    }
-    .stButton>button:hover { box-shadow: 0 0 20px #ff00c1; }
+    h2, h3 { color: #00d2ff !important; font-family: 'Orbitron', sans-serif; font-size: 2.5rem !important; }
+    p, label { font-size: 1.35rem !important; color: white !important; font-family: 'Poppins', sans-serif; font-weight: 600; }
+
+    .stButton>button { background: linear-gradient(45deg, #ff00c1, #00d2ff); color: white !important; border-radius: 50px; padding: 15px 45px; font-weight: 900; width: 100%; border: none; box-shadow: 0 0 30px rgba(255, 0, 193, 0.4); }
     </style>
     <div class="main-overlay"></div>
     """, unsafe_allow_html=True)
 
-# --- 3. LOAD AI MODELS (CACHED) ---
-@st.cache_resource
-def load_all_models():
-    # Whisper & Emotion
-    w_model = whisper.load_model("tiny")
-    e_pipe = pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base")
-    
-    # ML Models (Technova)
-    try:
-        with open('nb_task.pkl', 'rb') as f: nb = pickle.load(f)
-        with open('knn_music.pkl', 'rb') as f: knn = pickle.load(f)
-        with open('encoders.pkl', 'rb') as f: enc = pickle.load(f)
-        ml_ready = True
-    except:
-        nb, knn, enc, ml_ready = None, None, None, False
-        
-    return w_model, e_pipe, nb, knn, enc, ml_ready
+# --- 5. AUDIO LOGIC FUNCTIONS ---
 
-whisper_model, emotion_pipe, nb_model, knn_model, encoders, ml_status = load_all_models()
-
-# --- 4. LOGIC FUNCTIONS ---
 def voice_to_music(audio, sr):
-    f0, _, _ = librosa.pyin(audio, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
-    f0 = np.nan_to_num(f0)
     hop_length = 512
-    f0_up = np.interp(np.arange(len(audio)), np.arange(0, len(audio), hop_length), f0[:len(audio)//hop_length + 1][:len(audio)])
-    phase = np.cumsum(2 * np.pi * f0_up / sr)
-    return 0.5 * np.sin(phase)
+    f0, _, _ = librosa.pyin(audio, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'), hop_length=hop_length)
+    f0 = np.nan_to_num(f0)
+    f0_stretched = np.repeat(f0, hop_length)
+    if len(f0_stretched) < len(audio): f0_stretched = np.pad(f0_stretched, (0, len(audio) - len(f0_stretched)))
+    else: f0_stretched = f0_stretched[:len(audio)]
+    phase = np.cumsum(2 * np.pi * f0_stretched / sr)
+    music = 0.5 * np.sin(phase) + 0.2 * np.sin(2 * phase)
+    max_val = np.max(np.abs(music))
+    return music / max_val if max_val > 0 else music
 
-# --- 5. SIDEBAR NAVIGATION ---
+def text_to_song_logic(text):
+    sr = 44100
+    words = text.split()
+    note_dur = 0.5
+    full_song = np.array([])
+    scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25] # Pentatonic
+    for word in words:
+        freq = scale[len(word) % len(scale)]
+        t = np.linspace(0, note_dur, int(sr * note_dur))
+        envelope = np.exp(-3 * t / note_dur) 
+        note = 0.5 * np.sin(2 * np.pi * freq * t) * envelope
+        full_song = np.concatenate([full_song, note])
+    return full_song, sr
+
+# --- 6. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.markdown("<h1 style='text-align:center;'>VOCALIS AI</h1>", unsafe_allow_html=True)
-    st.image("https://cdn-icons-png.flaticon.com/512/3659/3659784.png", width=100)
-    choice = st.radio("NAVIGATION", ["🏠 Home", "🧠 Mood Engine", "🎨 Creative Studio", "📊 AI Analyzer", "♿ Assist Mode"])
+    st.markdown("<h2 style='text-align:center; color:#00d2ff !important;'>TECHNOVA</h2>", unsafe_allow_html=True)
+    st.image("https://cdn-icons-png.flaticon.com/512/3659/3659784.png", width=120)
     st.write("---")
-    if ml_status: st.success("AI Engine: Active")
-    else: st.warning("Core ML: Standby")
+    if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
+    else: st.error("⚠️ ML FILES MISSING")
+    
+    choice = st.radio("SELECT MODULE:", ["🏠 Dashboard", "❄️❄️❄️ Mood AI", "🎨🎨🎨 Creative Studio", "♿ Hearing Assist"])
 
-# --- 6. MAIN INTERFACE ---
-st.markdown('<h1 class="hero-title">VOCALIS AI ENGINE</h1>', unsafe_allow_html=True)
+# --- 7. HEADER ---
+st.markdown("""<div class="hero-header"><h1 class="company-title">TECHNOVA SOLUTION</h1><p style="letter-spacing: 6px; color:#92fe9d; font-size:1.6rem; font-weight:700;">SONICSENSE ULTRA PRO</p></div>""", unsafe_allow_html=True)
 
-# --- HOME MODULE ---
-if choice == "🏠 Home":
+# --- 8. MODULES ---
+
+# --- DASHBOARD ---
+if "Dashboard" in choice:
     st.snow()
-    col1, col2 = st.columns([1.5, 1])
+    col1, col2 = st.columns([1.6, 1])
     with col1:
-        st.markdown("""
-        <div class="glass-card">
-            <h2>Welcome to the Future of Sound</h2>
-            <p>Vocalis AI combines Deep Learning and Signal Processing to transform your voice into art. 
-            From predicting your mood to generating music from lyrics, everything is powered by AI.</p>
-            <br>
-            <h4>✨ Features:</h4>
-            <ul>
-                <li>AI Mood & Task Prediction</li>
-                <li>Voice-to-Music Synthesis</li>
-                <li>High-Accuracy Transcription</li>
-                <li>Hearing Frequency Optimization</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<div class='glass-card'><h2>The Future of Audio</h2><p>Technova Solution bridges the gap between sound and technology. Explore our smart prediction matrum creative tools designed for everyone.</p></div>", unsafe_allow_html=True)
     with col2:
-        st.image("https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=500&auto=format&fit=crop")
+        st.image("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500&h=500&fit=crop", use_container_width=True)
 
-# --- MOOD ENGINE (Technova Logic) ---
-elif choice == "🧠 Mood Engine":
-    st.markdown('<div class="glass-card"><h3>🧠 Smart Mood Prediction</h3></div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        mood = st.selectbox("How are you feeling?", ["Calm", "Stressed", "Energetic", "Sad"])
-        act = st.selectbox("What are you doing?", ["Studying", "Coding", "Workout", "Relaxing"])
-        if st.button("🚀 Analyze Mood"):
-            st.balloons()
-            # Demo logic if ML files missing, else real logic
-            st.session_state.res = ("Deep Work Session", "Ambient Focus")
-            st.info(f"Recommended Activity: {st.session_state.res[0]}")
-    with c2:
-        st.markdown(f"<div class='glass-card' style='border-color:#1DB954;'><h4>🎧 Recommended Music</h4><p>Based on your mood, we suggest <b>Lo-Fi Beats</b>.</p><br><a href='https://open.spotify.com' target='_blank'><button style='background:#1DB954; color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer;'>Open Spotify</button></a></div>", unsafe_allow_html=True)
+# --- MOOD AI ---
+elif "Mood AI" in choice:
+    st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Task Prediction</h3></div>", unsafe_allow_html=True)
+    genre_search_map = {"Lo-Fi": "lofi focus music", "Electronic": "electronic workout music", "Jazz": "smooth jazz music", "Classical": "classical focus music", "Pop": "top pop hits", "Ambient": "ambient calm music", "Rock": "rock energy music"}
+    col1, col2 = st.columns([1, 1.2])
+    with col1:
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        u_mood = st.selectbox("Current Mood:", ["Calm", "Stressed", "Energetic", "Sad"])
+        u_act = st.selectbox("Activity:", ["Studying", "Coding", "Workout", "Relaxing", "Sleeping"])
+        if st.button("🚀 PREDICT & SUGGEST"):
+            if is_ml_ready:
+                m_enc = encoders['le_mood'].transform([u_mood])[0]
+                a_enc = encoders['le_activity'].transform([u_act])[0]
+                X = np.array([[m_enc, a_enc, datetime.now().hour, 0]])
+                st.session_state.pred_task = encoders['le_task'].inverse_transform(nb_model.predict(X))[0]
+                st.session_state.pred_genre = encoders['le_music'].inverse_transform(knn_model.predict(X))[0]
+            else:
+                st.session_state.pred_task = "Focus Session"; st.session_state.pred_genre = "Lo-Fi"
+            st.balloons(); st.snow()
+        st.markdown("</div>", unsafe_allow_html=True)
+    with col2:
+        if st.session_state.pred_genre:
+            genre = st.session_state.pred_genre
+            search_url = f"https://open.spotify.com/search/{genre_search_map.get(genre, 'lofi').replace(' ', '%20')}"
+            st.markdown(f"<div class='glass-card' style='text-align:center; border: 2px solid #1DB954;'><h3>🎧 Recommendation</h3><p><b>Task:</b> {st.session_state.pred_task}</p><p><b>Music:</b> {genre}</p><br><a href='{search_url}' target='_blank'><button style='background:linear-gradient(45deg,#1DB954,#1ed760); color:white; padding:15px 30px; border:none; border-radius:50px; font-weight:800; cursor:pointer;'>🔗 OPEN IN SPOTIFY</button></a></div>", unsafe_allow_html=True)
 
-# --- CREATIVE STUDIO (Combined Creation) ---
-elif choice == "🎨 Creative Studio":
-    st.markdown('<div class="glass-card"><h3>🎨 Creative Studio</h3></div>', unsafe_allow_html=True)
-    t1, t2 = st.tabs(["🎤 Voice Synthesis", "✍️ Text-to-Song"])
-    with t1:
-        v_file = st.file_uploader("Upload Voice (Audio/Video)", type=["mp3","wav","mp4"])
-        if v_file:
-            st.audio(v_file)
-            if st.button("✨ Synthesize to Music"):
-                with st.spinner("Transforming..."):
-                    y, sr = librosa.load(v_file)
-                    out = voice_to_music(y, sr)
-                    st.audio(out, sample_rate=sr)
-                    st.success("Synthesis Complete!")
-    with t2:
-        lyrics = st.text_area("Paste your lyrics here:")
-        if lyrics and st.button("🎵 Generate AI Melody"):
-            st.balloons()
-            st.info("Generating algorithmic melody based on word rhythm...")
+# --- CREATIVE STUDIO ---
+elif "Creative Studio" in choice:
+    st.markdown("<div class='glass-card'><h3>🎙️ Creative AI Studio</h3></div>", unsafe_allow_html=True)
+    # புதிய Tab "🎵 AI BGM MIXER" சேர்க்கப்பட்டுள்ளது
+    tab1, tab2, tab3, tab4 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO SONG", "🎵 AI BGM MIXER"])
+    
+    with tab1:
+        v = st.audio_input("Record voice to convert:")
+        if v and st.button("✨ TRANSFORM RECORDING"):
+            y, sr = librosa.load(v); processed = voice_to_music(y, sr)
+            st.audio(processed, sample_rate=sr); st.balloons()
+    
+    with tab2:
+        up = st.file_uploader("Upload Audio (MP3/WAV):", type=["mp3","wav"])
+        if up and st.button("🚀 TRANSFORM UPLOAD"):
+            y, sr = librosa.load(up); processed = voice_to_music(y, sr)
+            st.audio(processed, sample_rate=sr); st.balloons()
+    
+    with tab3:
+        lyrics = st.text_area("Input Lyrics (e.g., Kanguva lyrics):")
+        if lyrics and st.button("🎵 GENERATE THEME"):
+            song, sr_s = text_to_song_logic(lyrics)
+            st.audio(song, sample_rate=sr_s); st.balloons()
 
-# --- AI ANALYZER (Corrected Section) ---
-elif choice == "📊 AI Analyzer":
-    st.markdown('<div class="glass-card"><h3>📊 Pro Audio Analyzer</h3></div>', unsafe_allow_html=True)
-    up = st.file_uploader("Upload for deep analysis", type=["mp3","wav"])
-    if up:
-        # 1. Load audio using librosa
-        y, sr = librosa.load(up, sr=16000) # Whisper works best at 16kHz
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            fig, ax = plt.subplots(figsize=(10, 4))
-            librosa.display.waveshow(y, sr=sr, ax=ax, color="#00d2ff")
-            ax.set_title("Waveform Analysis")
-            st.pyplot(fig)
-            
-        with col2:
-            if st.button("📝 Transcribe & Emotion"):
-                with st.spinner("AI is thinking..."):
-                    try:
-                        # மிக முக்கியம்: 'up.name'க்கு பதில் 'y' (audio array) அனுப்பவும்
-                        res = whisper_model.transcribe(y) 
-                        st.write(f"**Transcript:** {res['text']}")
-                        
-                        emo = emotion_pipe(res['text'][:512])[0]['label']
-                        st.warning(f"Detected Emotion: {emo.upper()}")
-                    except Exception as e:
-                        st.error(f"Error: {e}. Please check if ffmpeg is installed via packages.txt")
+    # --- நீங்கள் கேட்ட BGM MIXER பகுதி இதோ ---
+    with tab4:
+        st.write("Mix your voice with background music.")
+        # Upload inputs
+        v_file_mix = st.file_uploader("Upload Voice File (rec2.mp3 style):", type=["mp3", "wav"], key="v_mix")
+        b_file_mix = st.file_uploader("Upload BGM File (bike-ride style):", type=["mp3", "wav"], key="b_mix")
 
-# --- ASSIST MODE ---
-elif choice == "♿ Assist Mode":
-    st.markdown('<div class="glass-card"><h3>♿ Hearing Assist Mode</h3><p>Optimizing sound for better vibration and clarity.</p></div>', unsafe_allow_html=True)
-    f = st.file_uploader("Upload Audio", type=["mp3","wav"])
-    if f:
-        shift = st.slider("Frequency Shift", -10, 10, -5)
-        if st.button("🔊 Optimize Sound"):
-            y, sr = librosa.load(f)
-            y_s = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
-            st.audio(y_s, sample_rate=sr)
+        if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
+            with st.spinner("Processing Fusion..."):
+                # Save uploaded files temporarily to work with pydub
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as v_tmp, \
+                     tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as b_tmp:
+                    
+                    v_tmp.write(v_file_mix.read())
+                    b_tmp.write(b_file_mix.read())
+                    
+                    # pydub Logic
+                    voice_seg = AudioSegment.from_file(v_tmp.name)
+                    bgm_seg = AudioSegment.from_file(b_tmp.name)
+
+                    # --- உங்கள் கோட் இதோ ---
+                    bgm_seg = bgm_seg - 15
+                    final = bgm_seg.overlay(voice_seg)
+                    
+                    final_path = "final_song.wav"
+                    final.export(final_path, format="wav")
+                    
+                    # Result
+                    st.audio(final_path)
+                    st.success("final_song.wav ready ✅")
+                    st.balloons()
+
+# --- HEARING ASSIST ---
+elif "Hearing Assist" in choice:
+    st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Optimizing sound frequencies for vibrations.</p></div>", unsafe_allow_html=True)
+    up_h = st.file_uploader("Upload audio for frequency shift", type=["mp3", "wav"])
+    if up_h:
+        y, sr = librosa.load(up_h)
+        shift = st.slider("Frequency Sensitivity (Lower pitch = more vibration)", -12, 0, -8)
+        if st.button("🔊 OPTIMIZE Pattern"):
+            st.snow()
+            y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
+            st.audio(y_shift * 1.5, sample_rate=sr)
+            st.success("Sound optimized for Earspots.")
