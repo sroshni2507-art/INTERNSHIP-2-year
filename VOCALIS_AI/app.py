@@ -200,7 +200,7 @@ elif "Hearing Assist" in choice:
     if up_h:
         y, sr = librosa.load(up_h)
         shift = st.slider("Frequency Sensitivity (Lower pitch = more vibration)", -12, 0, -8)
-         if st.button("🔊 OPTIMIZE Pattern"):
+        if st.button("🔊 OPTIMIZE Pattern"):
             st.snow()
             y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
             st.audio(y_shift * 1.5, sample_rate=sr)
