@@ -174,24 +174,33 @@ elif choice == "🎨 Creative Studio":
             st.balloons()
             st.info("Generating algorithmic melody based on word rhythm...")
 
-# --- AI ANALYZER (EchoSense Logic) ---
+# --- AI ANALYZER (Corrected Section) ---
 elif choice == "📊 AI Analyzer":
     st.markdown('<div class="glass-card"><h3>📊 Pro Audio Analyzer</h3></div>', unsafe_allow_html=True)
     up = st.file_uploader("Upload for deep analysis", type=["mp3","wav"])
     if up:
-        y, sr = librosa.load(up)
+        # 1. Load audio using librosa
+        y, sr = librosa.load(up, sr=16000) # Whisper works best at 16kHz
+        
         col1, col2 = st.columns(2)
         with col1:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(10, 4))
             librosa.display.waveshow(y, sr=sr, ax=ax, color="#00d2ff")
+            ax.set_title("Waveform Analysis")
             st.pyplot(fig)
+            
         with col2:
             if st.button("📝 Transcribe & Emotion"):
                 with st.spinner("AI is thinking..."):
-                    res = whisper_model.transcribe(up.name if hasattr(up, 'name') else y)
-                    st.write(f"**Transcript:** {res['text']}")
-                    emo = emotion_pipe(res['text'][:512])[0]['label']
-                    st.warning(f"Detected Emotion: {emo.upper()}")
+                    try:
+                        # மிக முக்கியம்: 'up.name'க்கு பதில் 'y' (audio array) அனுப்பவும்
+                        res = whisper_model.transcribe(y) 
+                        st.write(f"**Transcript:** {res['text']}")
+                        
+                        emo = emotion_pipe(res['text'][:512])[0]['label']
+                        st.warning(f"Detected Emotion: {emo.upper()}")
+                    except Exception as e:
+                        st.error(f"Error: {e}. Please check if ffmpeg is installed via packages.txt")
 
 # --- ASSIST MODE ---
 elif choice == "♿ Assist Mode":
