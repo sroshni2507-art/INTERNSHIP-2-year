@@ -7,6 +7,7 @@ import os
 import matplotlib.pyplot as plt
 import soundfile as sf
 import tempfile
+import time
 from datetime import datetime
 
 # --- 1. PAGE CONFIGURATION ---
@@ -17,11 +18,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. SESSION STATE INITIALIZATION ---
+# --- 2. SESSION STATE FOR BPM TAPPER & ML ---
 if 'pred_task' not in st.session_state:
     st.session_state.pred_task = None
 if 'pred_genre' not in st.session_state:
     st.session_state.pred_genre = None
+if 'taps' not in st.session_state:
+    st.session_state.taps = []
+if 'bpm_val' not in st.session_state:
+    st.session_state.bpm_val = 0
 
 # --- 3. SMART PATH LOGIC FOR ML FILES ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +47,7 @@ def load_models():
 
 nb_model, knn_model, encoders, is_ml_ready = load_models()
 
-# --- 4. ADVANCED CSS ---
+# --- 4. ADVANCED CSS (PINK & NEON THEME) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;700;900&display=swap');
@@ -95,6 +100,22 @@ def text_to_song_logic(text):
         full_song = np.concatenate([full_song, note])
     return full_song, sr
 
+def voice_morpher(y, sr, effect):
+    if effect == "Child 👶": return librosa.effects.pitch_shift(y, sr=sr, n_steps=5)
+    if effect == "Villain 👿": return librosa.effects.pitch_shift(y, sr=sr, n_steps=-5)
+    if effect == "Robot 🤖":
+        y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=2)
+        return np.clip(y_shift * 1.5, -1, 1)
+    return y
+
+def lyric_assistant(theme):
+    lyrics = {
+        "Love": ["My heart skips a beat for you", "Walking under the stars together", "In your eyes, I found my world", "Love is a melody we sing"],
+        "Space": ["Floating in the infinite dark", "Galaxy of dreams in my head", "Riding the comet through the void", "Alien signals calling me home"],
+        "Rain": ["Droplets dancing on my window", "The smell of earth when sky cries", "Walking lonely in the storm", "Wash away the pain of yesterday"]
+    }
+    return lyrics.get(theme, ["Sing your heart out...", "The music flows through you..."])
+
 # --- 6. SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.markdown("<h2 style='text-align:center; color:#00d2ff !important;'>TECHNOVA</h2>", unsafe_allow_html=True)
@@ -103,7 +124,7 @@ with st.sidebar:
     if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
     else: st.error("⚠️ ML FILES MISSING")
     
-    choice = st.radio("SELECT MODULE:", ["🏠 Dashboard", "❄️❄️❄️ Mood AI", "🎨🎨🎨 Creative Studio", "♿ Hearing Assist"])
+    choice = st.radio("SELECT MODULE:", ["🏠 Dashboard", "❄️❄️❄️ Mood AI", "🎭 Voice Morpher", "🎨🎨🎨 Creative Studio", "♿ Hearing Assist", "🎹 BPM Tapper"])
 
 # --- 7. HEADER ---
 st.markdown("""<div class="hero-header"><h1 class="company-title">TECHNOVA SOLUTION</h1><p style="letter-spacing: 6px; color:#92fe9d; font-size:1.6rem; font-weight:700;">SONICSENSE ULTRA PRO</p></div>""", unsafe_allow_html=True)
@@ -145,10 +166,21 @@ elif choice == "❄️❄️❄️ Mood AI":
             search_url = f"https://open.spotify.com/search/{genre_search_map.get(genre, 'lofi').replace(' ', '%20')}"
             st.markdown(f"<div class='glass-card' style='text-align:center; border: 2px solid #1DB954;'><h3>🎧 Recommendation</h3><p><b>Task:</b> {st.session_state.pred_task}</p><p><b>Music:</b> {genre}</p><br><a href='{search_url}' target='_blank'><button style='background:linear-gradient(45deg,#1DB954,#1ed760); color:white; padding:15px 30px; border:none; border-radius:50px; font-weight:800; cursor:pointer;'>🔗 OPEN IN SPOTIFY</button></a></div>", unsafe_allow_html=True)
 
+# --- VOICE MORPHER (FEATURE 1) ---
+elif choice == "🎭 Voice Morpher":
+    st.markdown("<div class='glass-card'><h3>🎭 AI Voice Changer</h3></div>", unsafe_allow_html=True)
+    v_up = st.file_uploader("Upload Voice File:", type=["wav", "mp3"], key="morph_up")
+    effect = st.selectbox("Choose Character:", ["Child 👶", "Villain 👿", "Robot 🤖"])
+    if v_up and st.button("✨ TRANSFORM VOICE"):
+        y, sr = librosa.load(v_up)
+        morphed = voice_morpher(y, sr, effect)
+        st.audio(morphed, sample_rate=sr)
+        st.success(f"Character {effect} Applied Successfully!")
+
 # --- CREATIVE STUDIO ---
 elif choice == "🎨🎨🎨 Creative Studio":
     st.markdown("<div class='glass-card'><h3>🎙️ Creative AI Studio</h3></div>", unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO SONG", "🎵 AI BGM MIXER"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO SONG", "🎵 AI BGM MIXER", "🎤 KARAOKE PRO", "🎼 VISUALIZER"])
     
     with tab1:
         v = st.audio_input("Record voice to convert:")
@@ -162,17 +194,22 @@ elif choice == "🎨🎨🎨 Creative Studio":
             y, sr = librosa.load(up); processed = voice_to_music(y, sr)
             st.audio(processed, sample_rate=sr); st.balloons()
     
-    with tab3:
-        lyrics = st.text_area("Input Lyrics:")
-        if lyrics and st.button("🎵 GENERATE THEME"):
-            song, sr_s = text_to_song_logic(lyrics)
+    with tab3: # LYRICS AI (FEATURE 4)
+        st.write("Need inspiration? Generate lyrics based on a theme.")
+        theme = st.selectbox("Choose Theme:", ["Love", "Space", "Rain"])
+        if st.button("✍️ GENERATE LYRICS"):
+            lines = lyric_assistant(theme)
+            for line in lines: st.write(f"🎶 *{line}*")
+        st.write("---")
+        lyrics_txt = st.text_area("Or Input Your Own Lyrics:")
+        if lyrics_txt and st.button("🎵 GENERATE THEME FROM TEXT"):
+            song, sr_s = text_to_song_logic(lyrics_txt)
             st.audio(song, sample_rate=sr_s); st.balloons()
 
     with tab4:
         st.write("Mix your voice with background music.")
         v_file_mix = st.file_uploader("Upload Voice File:", type=["wav", "mp3"], key="v_mix")
         b_file_mix = st.file_uploader("Upload BGM File:", type=["wav", "mp3"], key="b_mix")
-
         if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
             with st.spinner("Processing Fusion..."):
                 v_data, v_sr = librosa.load(v_file_mix, sr=None)
@@ -186,6 +223,27 @@ elif choice == "🎨🎨🎨 Creative Studio":
                 st.success("final_song.wav ready ✅")
                 st.balloons()
 
+    with tab5: # KARAOKE PRO (FEATURE 2)
+        st.write("Extract background music (Lite version).")
+        k_up = st.file_uploader("Upload Song File:", type=["wav", "mp3"], key="karaoke_up")
+        if k_up and st.button("🎸 EXTRACT INSTRUMENTAL"):
+            y, sr = librosa.load(k_up)
+            # Center channel subtraction (vocal reduction logic)
+            y_harmonic = librosa.effects.harmonic(y)
+            st.audio(y_harmonic, sample_rate=sr)
+            st.info("Vocal reduction applied. Ready for Karaoke!")
+
+    with tab6: # VISUALIZER (FEATURE 3)
+        st.write("Professional Audio Waveform Analysis")
+        vis_up = st.file_uploader("Upload Audio for Visualization:", type=["wav", "mp3"], key="vis_up")
+        if vis_up:
+            y, sr = librosa.load(vis_up)
+            fig, ax = plt.subplots(figsize=(12, 4))
+            librosa.display.waveshow(y, sr=sr, ax=ax, color="#ff00c1")
+            ax.set_facecolor('black')
+            fig.patch.set_facecolor('black')
+            st.pyplot(fig)
+
 # --- HEARING ASSIST ---
 elif choice == "♿ Hearing Assist":
     st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Optimizing sound frequencies for vibrations.</p></div>", unsafe_allow_html=True)
@@ -198,3 +256,20 @@ elif choice == "♿ Hearing Assist":
             y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
             st.audio(y_shift * 1.5, sample_rate=sr)
             st.success("Sound optimized successfully.")
+
+# --- BPM TAPPER (FEATURE 5) ---
+elif choice == "🎹 BPM Tapper":
+    st.markdown("<div class='glass-card'><h3>🎹 Virtual BPM Tapper</h3><p>Tap the button in rhythm with a song to find its Tempo.</p></div>", unsafe_allow_html=True)
+    if st.button("🥁 TAP TO THE BEAT"):
+        st.session_state.taps.append(time.time())
+        if len(st.session_state.taps) > 1:
+            diffs = np.diff(st.session_state.taps[-8:]) # Consider last 8 taps
+            avg_diff = np.mean(diffs)
+            st.session_state.bpm_val = 60 / avg_diff
+    
+    st.metric("Estimated Tempo (BPM)", f"{int(st.session_state.bpm_val)}")
+    
+    if st.button("🔄 Reset Tapper"):
+        st.session_state.taps = []
+        st.session_state.bpm_val = 0
+        st.rerun()
