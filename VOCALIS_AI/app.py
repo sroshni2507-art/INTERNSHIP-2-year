@@ -4,10 +4,9 @@ import numpy as np
 import pickle
 import os
 import matplotlib.pyplot as plt
-import io
+import soundfile as sf
 import tempfile
 from datetime import datetime
-from pydub import AudioSegment # புதிதாக சேர்க்கப்பட்டது
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -148,7 +147,6 @@ elif "Mood AI" in choice:
 # --- CREATIVE STUDIO ---
 elif "Creative Studio" in choice:
     st.markdown("<div class='glass-card'><h3>🎙️ Creative AI Studio</h3></div>", unsafe_allow_html=True)
-    # புதிய Tab "🎵 AI BGM MIXER" சேர்க்கப்பட்டுள்ளது
     tab1, tab2, tab3, tab4 = st.tabs(["🎤 RECORD LIVE", "📤 UPLOAD FILE", "✍️ TEXT TO SONG", "🎵 AI BGM MIXER"])
     
     with tab1:
@@ -158,7 +156,7 @@ elif "Creative Studio" in choice:
             st.audio(processed, sample_rate=sr); st.balloons()
     
     with tab2:
-        up = st.file_uploader("Upload Audio (MP3/WAV):", type=["mp3","wav"])
+        up = st.file_uploader("Upload Audio (MP3/WAV):", type=["mp3","wav"], key="creative_up")
         if up and st.button("🚀 TRANSFORM UPLOAD"):
             y, sr = librosa.load(up); processed = voice_to_music(y, sr)
             st.audio(processed, sample_rate=sr); st.balloons()
@@ -168,45 +166,41 @@ elif "Creative Studio" in choice:
         if lyrics and st.button("🎵 GENERATE THEME"):
             song, sr_s = text_to_song_logic(lyrics)
             st.audio(song, sample_rate=sr_s); st.balloons()
-# --- Backup Mix Logic using Librosa (No ffmpeg needed for basic mix) ---
-with tab4:
-    st.write("Mix your voice with background music.")
-    v_file_mix = st.file_uploader("Upload Voice File:", type=["wav", "mp3"], key="v_mix")
-    b_file_mix = st.file_uploader("Upload BGM File:", type=["wav", "mp3"], key="b_mix")
 
-    if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
-        with st.spinner("Processing Fusion..."):
-            # Load both files
-            v_data, v_sr = librosa.load(v_file_mix, sr=None)
-            b_data, b_sr = librosa.load(b_file_mix, sr=v_sr) # Match sample rates
+    with tab4:
+        st.write("Mix your voice with background music.")
+        v_file_mix = st.file_uploader("Upload Voice File:", type=["wav", "mp3"], key="v_mix")
+        b_file_mix = st.file_uploader("Upload BGM File:", type=["wav", "mp3"], key="b_mix")
 
-            # Adjust volume (bgm = bgm - 15dB is roughly dividing by 5.6)
-            b_data = b_data * 0.17 
+        if v_file_mix and b_file_mix and st.button("🎚️ MIX VOICE & BGM"):
+            with st.spinner("Processing Fusion..."):
+                # Load both files
+                v_data, v_sr = librosa.load(v_file_mix, sr=None)
+                b_data, b_sr = librosa.load(b_file_mix, sr=v_sr) # Match sample rates
 
-            # Match lengths
-            min_len = min(len(v_data), len(b_data))
-            mixed = v_data[:min_len] + b_data[:min_len]
+                # Adjust volume (bgm = bgm - 15dB is roughly multiplying by 0.17)
+                b_data = b_data * 0.17 
 
-            # Save and Play
-            final_path = "final_song.wav"
-            sf.write(final_path, mixed, v_sr)
-            
-            st.audio(final_path)
-            st.success("final_song.wav ready (Mixed using Librosa) ✅")
-                    
-                    # Result
-                    st.audio(final_path)
-                    st.success("final_song.wav ready ✅")
-                    st.balloons()
+                # Match lengths (Overlay logic)
+                min_len = min(len(v_data), len(b_data))
+                mixed = v_data[:min_len] + b_data[:min_len]
+
+                # Save and Play
+                final_path = "final_song.wav"
+                sf.write(final_path, mixed, v_sr)
+                
+                st.audio(final_path)
+                st.success("final_song.wav ready (Mixed using Librosa) ✅")
+                st.balloons()
 
 # --- HEARING ASSIST ---
 elif "Hearing Assist" in choice:
     st.markdown("<div class='glass-card'><h3>♿ Inclusive Hearing Assist</h3><p>Optimizing sound frequencies for vibrations.</p></div>", unsafe_allow_html=True)
-    up_h = st.file_uploader("Upload audio for frequency shift", type=["mp3", "wav"])
+    up_h = st.file_uploader("Upload audio for frequency shift", type=["mp3", "wav"], key="hearing_up")
     if up_h:
         y, sr = librosa.load(up_h)
         shift = st.slider("Frequency Sensitivity (Lower pitch = more vibration)", -12, 0, -8)
-        if st.button("🔊 OPTIMIZE Pattern"):
+         if st.button("🔊 OPTIMIZE Pattern"):
             st.snow()
             y_shift = librosa.effects.pitch_shift(y, sr=sr, n_steps=shift)
             st.audio(y_shift * 1.5, sample_rate=sr)
