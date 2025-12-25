@@ -3,9 +3,9 @@ librosa
 numpy
 matplotlib
 soundfile
-moviepy
+moviepy>=2.0.0
 openai-whisper
 transformers
-torch
-torchaudio
+torch --index-url https://download.pytorch.org/whl/cpu
+torchaudio --index-url https://download.pytorch.org/whl/cpu
 scipy
