@@ -1,4 +1,5 @@
 streamlit
+streamlit-lottie
 librosa
 numpy
 matplotlib
@@ -6,7 +7,10 @@ soundfile
 moviepy>=2.0.0
 openai-whisper
 transformers
-torch --index-url https://download.pytorch.org/whl/cpu
-torchaudio --index-url https://download.pytorch.org/whl/cpu
 scipy
 pydub
+requests
+
+torch==2.1.0+cpu
+torchaudio==2.1.0+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
