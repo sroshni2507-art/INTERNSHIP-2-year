@@ -21,14 +21,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. LOTTIE ANIMATION LOADER ---
+# --- 2. LOTTIE ANIMATION LOADER (With Error Handling) ---
 def load_lottieurl(url):
-    r = requests.get(url)
-    if r.status_code != 200: return None
-    return r.json()
+    try:
+        r = requests.get(url, timeout=5)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except Exception:
+        return None
 
-lottie_ai = load_lottieurl("https://assets10.lottiefiles.com/packages/lf20_myejioos.json") 
-lottie_music = load_lottieurl("https://assets5.lottiefiles.com/packages/lf20_Y9S7Un.json")
+# Updated Working Lottie URLs
+lottie_ai = load_lottieurl("https://lottie.host/804d9c75-3432-4770-8777-628f800c01a5/eH6F1X9K3L.json") 
+lottie_music = load_lottieurl("https://lottie.host/83e0e788-779d-4033-9092-22538965873a/vX6yUf0wV8.json")
 
 # --- 3. SESSION STATE INITIALIZATION ---
 if 'pred_task' not in st.session_state: st.session_state.pred_task = None
@@ -36,7 +41,7 @@ if 'pred_genre' not in st.session_state: st.session_state.pred_genre = None
 if 'taps' not in st.session_state: st.session_state.taps = []
 if 'bpm_val' not in st.session_state: st.session_state.bpm_val = 0
 
-# --- 4. SMART PATH LOGIC FOR ML FILES (Technova Core) ---
+# --- 4. SMART PATH LOGIC FOR ML FILES ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 @st.cache_resource
 def load_models():
@@ -54,7 +59,7 @@ def load_models():
 
 nb_model, knn_model, encoders, is_ml_ready = load_models()
 
-# --- 5. ADVANCED CSS (PINK SIDEBAR + NEON PULSE TITLE) ---
+# --- 5. ADVANCED CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Poppins:wght@400;700&display=swap');
@@ -62,11 +67,9 @@ st.markdown("""
     .stApp { background: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop"); background-size: cover; background-attachment: fixed; }
     .main-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: -1; }
     
-    /* SideBar Neon (Pink Style) */
     [data-testid="stSidebar"] { background-color: #050510 !important; border-right: 3px solid #ff00c1 !important; }
     [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #ff00c1 !important; font-weight: 900 !important; }
 
-    /* Neon Title Pulse Animation */
     @keyframes pulse {
         0% { text-shadow: 0 0 10px #ff00c1, 0 0 20px #ff00c1; }
         50% { text-shadow: 0 0 20px #00d2ff, 0 0 40px #00d2ff; }
@@ -116,7 +119,13 @@ def lyric_assistant(theme):
 # --- 7. SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='text-align:center;'>TECHNOVA x VOCALIS</h2>", unsafe_allow_html=True)
-    st_lottie(lottie_ai, height=120)
+    
+    # SAFE LOTTIE CALL: Only show if URL was successfully loaded
+    if lottie_ai:
+        st_lottie(lottie_ai, height=120, key="ai_anim")
+    else:
+        st.markdown("<h1 style='text-align:center;'>🚀</h1>", unsafe_allow_html=True)
+
     choice = st.radio("SELECT ENGINE:", ["🏠 Dashboard", "🧠 Mood AI (ML)", "🎭 Voice Morpher", "🎨 Creative Studio", "♿ Assist Mode", "🎹 BPM Tapper"])
     st.write("---")
     if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
@@ -130,9 +139,15 @@ st.markdown("""<div class="hero-header"><h1 class="company-title">SONICSENSE ULT
 if choice == "🏠 Dashboard":
     st.snow()
     col1, col2 = st.columns([1.5, 1])
-    with col1: st.markdown("<div class='glass-card'><h2>The Future is Audio</h2><p>Experience the synergy of Machine Learning and Signal Processing. Analyze moods, create music, and assist the world.</p></div>", unsafe_allow_html=True)
-    with col2: st_lottie(lottie_music, height=250)
+    with col1: 
+        st.markdown("<div class='glass-card'><h2>The Future is Audio</h2><p>Experience the synergy of Machine Learning and Signal Processing. Analyze moods, create music, and assist the world.</p></div>", unsafe_allow_html=True)
+    with col2: 
+        if lottie_music:
+            st_lottie(lottie_music, height=250, key="music_anim")
+        else:
+            st.info("Animation loading failed, but we are ready to rock!")
 
+# ... (Rest of the logic from your original code remains the same)
 elif choice == "🧠 Mood AI (ML)":
     st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Task Prediction</h3></div>", unsafe_allow_html=True)
     u_mood = st.selectbox("Current Mood:", ["Calm", "Stressed", "Energetic", "Sad"])
@@ -144,7 +159,7 @@ elif choice == "🧠 Mood AI (ML)":
             st.session_state.pred_genre = encoders['le_music'].inverse_transform(knn_model.predict([[m_enc, a_enc, datetime.now().hour, 0]]))[0]
             st.success(f"Task: {st.session_state.pred_task} | Genre: {st.session_state.pred_genre}")
             st.balloons()
-        else: st.info("ML Prediction: Studying Lo-Fi")
+        else: st.info("ML Prediction Offline: Playing Lo-Fi Study Beats")
 
 elif choice == "🎭 Voice Morpher":
     st.markdown("<div class='glass-card'><h3>🎭 AI Voice Changer</h3></div>", unsafe_allow_html=True)
