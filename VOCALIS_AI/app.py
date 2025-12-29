@@ -21,17 +21,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. LOTTIE ANIMATION LOADER (With Error Handling) ---
+# --- 2. LOTTIE ANIMATION LOADER (With Safety Logic) ---
 def load_lottieurl(url):
     try:
         r = requests.get(url, timeout=5)
         if r.status_code != 200:
             return None
         return r.json()
-    except Exception:
+    except:
         return None
 
-# Updated Working Lottie URLs
+# Updated working Lottie URLs
 lottie_ai = load_lottieurl("https://lottie.host/804d9c75-3432-4770-8777-628f800c01a5/eH6F1X9K3L.json") 
 lottie_music = load_lottieurl("https://lottie.host/83e0e788-779d-4033-9092-22538965873a/vX6yUf0wV8.json")
 
@@ -78,7 +78,7 @@ st.markdown("""
 
     .hero-header { text-align: center; padding: 30px; background: rgba(255, 255, 255, 0.05); border-radius: 35px; border: 2px solid #ff00c1; backdrop-filter: blur(15px); margin-bottom: 20px; }
     .company-title { 
-        font-family: 'Orbitron', sans-serif; font-size: 4rem !important; font-weight: 900; 
+        font-family: 'Orbitron', sans-serif; font-size: 3.5rem !important; font-weight: 900; 
         background: linear-gradient(90deg, #ff00c1, #00d2ff); 
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
         animation: pulse 3s infinite;
@@ -93,7 +93,7 @@ st.markdown("""
 
     .stButton>button { 
         background: linear-gradient(45deg, #ff00c1, #00d2ff); color: white !important; 
-        border-radius: 50px; font-weight: 900; transition: 0.5s;
+        border-radius: 50px; font-weight: 900; transition: 0.5s; border: none;
     }
     </style>
     <div class="main-overlay"></div>
@@ -120,16 +120,16 @@ def lyric_assistant(theme):
 with st.sidebar:
     st.markdown("<h2 style='text-align:center;'>TECHNOVA x VOCALIS</h2>", unsafe_allow_html=True)
     
-    # SAFE LOTTIE CALL: Only show if URL was successfully loaded
+    # Check if lottie loaded successfully before displaying
     if lottie_ai:
-        st_lottie(lottie_ai, height=120, key="ai_anim")
+        st_lottie(lottie_ai, height=120, key="nav_ai")
     else:
-        st.markdown("<h1 style='text-align:center;'>🚀</h1>", unsafe_allow_html=True)
+        st.write("🚀 AI Core")
 
     choice = st.radio("SELECT ENGINE:", ["🏠 Dashboard", "🧠 Mood AI (ML)", "🎭 Voice Morpher", "🎨 Creative Studio", "♿ Assist Mode", "🎹 BPM Tapper"])
     st.write("---")
     if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
-    else: st.error("⚠️ ML CORE MISSING")
+    else: st.info("ℹ️ DEMO MODE (ML OFF)")
 
 # --- HEADER ---
 st.markdown("""<div class="hero-header"><h1 class="company-title">SONICSENSE ULTRA PRO</h1><p style="color:#92fe9d; font-weight:700;">HYBRID AUDIO FUSION ENGINE</p></div>""", unsafe_allow_html=True)
@@ -143,31 +143,34 @@ if choice == "🏠 Dashboard":
         st.markdown("<div class='glass-card'><h2>The Future is Audio</h2><p>Experience the synergy of Machine Learning and Signal Processing. Analyze moods, create music, and assist the world.</p></div>", unsafe_allow_html=True)
     with col2: 
         if lottie_music:
-            st_lottie(lottie_music, height=250, key="music_anim")
-        else:
-            st.info("Animation loading failed, but we are ready to rock!")
+            st_lottie(lottie_music, height=250, key="dash_music")
 
-# ... (Rest of the logic from your original code remains the same)
 elif choice == "🧠 Mood AI (ML)":
     st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Task Prediction</h3></div>", unsafe_allow_html=True)
     u_mood = st.selectbox("Current Mood:", ["Calm", "Stressed", "Energetic", "Sad"])
     u_act = st.selectbox("Activity:", ["Studying", "Coding", "Workout", "Relaxing"])
     if st.button("🚀 PREDICT"):
         if is_ml_ready:
-            m_enc, a_enc = encoders['le_mood'].transform([u_mood])[0], encoders['le_activity'].transform([u_act])[0]
-            st.session_state.pred_task = encoders['le_task'].inverse_transform(nb_model.predict([[m_enc, a_enc, datetime.now().hour, 0]]))[0]
-            st.session_state.pred_genre = encoders['le_music'].inverse_transform(knn_model.predict([[m_enc, a_enc, datetime.now().hour, 0]]))[0]
-            st.success(f"Task: {st.session_state.pred_task} | Genre: {st.session_state.pred_genre}")
-            st.balloons()
-        else: st.info("ML Prediction Offline: Playing Lo-Fi Study Beats")
+            try:
+                m_enc = encoders['le_mood'].transform([u_mood])[0]
+                a_enc = encoders['le_activity'].transform([u_act])[0]
+                st.session_state.pred_task = encoders['le_task'].inverse_transform(nb_model.predict([[m_enc, a_enc, datetime.now().hour, 0]]))[0]
+                st.session_state.pred_genre = encoders['le_music'].inverse_transform(knn_model.predict([[m_enc, a_enc, datetime.now().hour, 0]]))[0]
+                st.success(f"Task: {st.session_state.pred_task} | Genre: {st.session_state.pred_genre}")
+                st.balloons()
+            except:
+                st.error("Encoding error. Ensure model versions match.")
+        else: st.warning("ML Core Missing. Showing Demo: Suggested Lo-Fi & Logic Puzzles.")
 
 elif choice == "🎭 Voice Morpher":
     st.markdown("<div class='glass-card'><h3>🎭 AI Voice Changer</h3></div>", unsafe_allow_html=True)
     v_up = st.file_uploader("Upload Voice:", type=["wav", "mp3"])
     effect = st.selectbox("Character:", ["Child 👶", "Villain 👿", "Robot 🤖"])
     if v_up and st.button("✨ TRANSFORM"):
-        y, sr = librosa.load(v_up); morphed = voice_morpher(y, sr, effect)
-        st.audio(morphed, sample_rate=sr); st.success(f"{effect} Applied!")
+        y, sr = librosa.load(v_up)
+        morphed = voice_morpher(y, sr, effect)
+        st.audio(morphed, sample_rate=sr)
+        st.success(f"{effect} Applied!")
 
 elif choice == "🎨 Creative Studio":
     st.markdown("<div class='glass-card'><h3>🎙️ Creative Studio</h3></div>", unsafe_allow_html=True)
