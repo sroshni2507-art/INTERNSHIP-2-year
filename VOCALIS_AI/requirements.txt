@@ -1,11 +1,9 @@
 streamlit
-streamlit-lottie
-librosa==0.10.1
-numpy==1.26.4
+librosa
+numpy
 matplotlib
 soundfile
-moviepy
-scipy
-pydub
 requests
-
+streamlit-lottie
+pydub
+scikit-learn
