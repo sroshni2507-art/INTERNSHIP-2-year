@@ -14,15 +14,14 @@ from datetime import datetime
 from streamlit_lottie import st_lottie
 from pydub import AudioSegment
 
-# --- 1. PAGE CONFIGURATION ---
+
 st.set_page_config(
-    page_title="SONICSENSE ULTRA PRO | Technova x Vocalis",
+    page_title="SONICSENSE ULTRA PRO | TECHNOVA SOLUTIONS",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. LOTTIE ANIMATION LOADER ---
 def load_lottieurl(url):
     try:
         r = requests.get(url, timeout=5)
@@ -33,13 +32,12 @@ def load_lottieurl(url):
 lottie_ai = load_lottieurl("https://lottie.host/804d9c75-3432-4770-8777-628f800c01a5/eH6F1X9K3L.json") 
 lottie_music = load_lottieurl("https://lottie.host/83e0e788-779d-4033-9092-22538965873a/vX6yUf0wV8.json")
 
-# --- 3. SESSION STATE INITIALIZATION ---
+
 if 'pred_task' not in st.session_state: st.session_state.pred_task = None
 if 'pred_genre' not in st.session_state: st.session_state.pred_genre = None
 if 'taps' not in st.session_state: st.session_state.taps = []
 if 'bpm_val' not in st.session_state: st.session_state.bpm_val = 0
 
-# --- 4. SMART PATH LOGIC FOR ML FILES ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 @st.cache_resource
 def load_models():
@@ -57,7 +55,7 @@ def load_models():
 
 nb_model, knn_model, encoders, is_ml_ready = load_models()
 
-# --- 5. ADVANCED CSS (PINK NEON STYLE) ---
+
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Poppins:wght@400;700;900&display=swap');
@@ -94,7 +92,7 @@ st.markdown("""
     <div class="main-overlay"></div>
     """, unsafe_allow_html=True)
 
-# --- 6. CORE AUDIO LOGIC ---
+
 
 def voice_to_music(audio, sr):
     hop_length = 512
@@ -122,7 +120,7 @@ def text_to_song_logic(text):
         full_song = np.concatenate([full_song, note])
     return full_song, sr
 
-# --- 7. SIDEBAR ---
+
 with st.sidebar:
     st.markdown("<h2 style='text-align:center;'>TECHNOVA x VOCALIS</h2>", unsafe_allow_html=True)
     if lottie_ai: st_lottie(lottie_ai, height=120, key="nav_ai")
@@ -132,12 +130,10 @@ with st.sidebar:
     if is_ml_ready: st.success("✅ AI ENGINE: ACTIVE")
     else: st.error("⚠️ ML CORE MISSING")
 
-# --- HEADER ---
+
 st.markdown("""<div class="hero-header"><h1 class="company-title">SONICSENSE ULTRA PRO</h1><p style="color:#92fe9d; font-weight:700; letter-spacing:4px;">HYBRID AUDIO FUSION ENGINE</p></div>""", unsafe_allow_html=True)
 
-# --- 8. MODULES ---
 
-# --- DASHBOARD ---
 if choice == "🏠 Dashboard":
     st.snow()
     col1, col2 = st.columns([1.5, 1])
@@ -146,7 +142,7 @@ if choice == "🏠 Dashboard":
     with col2: 
         if lottie_music: st_lottie(lottie_music, height=250, key="dash_music")
 
-# --- MOOD AI (WITH SPOTIFY LOGIC) ---
+
 elif choice == "🧠 Mood AI (ML)":
     st.markdown("<div class='glass-card'><h3>🧠 AI Mood & Spotify Suggestion</h3></div>", unsafe_allow_html=True)
     
@@ -198,7 +194,7 @@ elif choice == "🧠 Mood AI (ML)":
                 </div>
             """, unsafe_allow_html=True)
 
-# --- CREATIVE STUDIO (MULTI-TAB) ---
+
 elif choice == "🎨 Creative Studio":
     st.markdown("<div class='glass-card'><h3>🎨 Creative AI Studio</h3></div>", unsafe_allow_html=True)
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎭 VOICE MORPH", "🎤 VOICE-TO-MUSIC", "✍️ TEXT-TO-SONG", "🎵 BGM MIXER", "🎼 VISUALS"])
@@ -235,7 +231,7 @@ elif choice == "🎨 Creative Studio":
             librosa.display.waveshow(y, sr=sr, ax=ax, color="#ff00c1")
             ax.set_facecolor('black'); fig.patch.set_facecolor('black'); st.pyplot(fig)
 
-# --- ASSIST MODE ---
+
 elif choice == "♿ Assist Mode":
     st.markdown("<div class='glass-card'><h3>♿ Hearing Assist</h3><p>Optimizing sound frequencies for enhanced tactile feedback (vibrations).</p></div>", unsafe_allow_html=True)
     h_up = st.file_uploader("Upload Audio:", type=["mp3", "wav"])
@@ -243,7 +239,7 @@ elif choice == "♿ Assist Mode":
         y, sr = librosa.load(h_up); out = librosa.effects.pitch_shift(y, sr=sr, n_steps=-8)
         st.audio(out * 1.6, sample_rate=sr); st.info("Frequencies shifted for vibration sensitivity.")
 
-# --- BPM TAPPER ---
+
 elif choice == "🎹 BPM Tapper":
     st.markdown("<div class='glass-card'><h3>🎹 BPM Tapper</h3></div>", unsafe_allow_html=True)
     st.write("Tap the button below in sync with your music to detect BPM.")
