@@ -122,7 +122,7 @@ def text_to_song_logic(text):
 
 
 with st.sidebar:
-    st.markdown("<h2 style='text-align:center;'>TECHNOVA x VOCALIS</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>TECHNOVA</h2>", unsafe_allow_html=True)
     if lottie_ai: st_lottie(lottie_ai, height=120, key="nav_ai")
     st.write("---")
     choice = st.radio("SELECT ENGINE:", ["🏠 Dashboard", "🧠 Mood AI (ML)", "🎨 Creative Studio", "♿ Assist Mode", "🎹 BPM Tapper"])
